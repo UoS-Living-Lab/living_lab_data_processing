@@ -1,2 +1,3 @@
 .dlVenv
 config/*.json
+.vscode
