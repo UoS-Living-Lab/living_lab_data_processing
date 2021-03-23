@@ -5,8 +5,16 @@ from flask import Flask, request
 from flask_httpauth import HTTPTokenAuth
 import json
 import sys
+import datetime
 
 from werkzeug.serving import WSGIRequestHandler
+
+
+
+# JSON & CSV storage directories
+JSON_NAME = 'ttn_' + str(datetime.datetime.now()) + '.json'
+CSV_DIR = os.getcwd() + '/data/csv/'
+JSON_DIR = os.getcwd() + '/data/json/'
 
 
 # POST credentials info
@@ -21,16 +29,34 @@ tokens = {
 	"X-Downlink-Apikey": accessTokens['X-Downlink-Apikey']
 }
 
+
+# Function to save the recieved JSON file to disk
+def jsonDump(struct):
+	print('JSON dump')
+	# Open a file for writing, filename will always be unique so append functions uneccessary
+	with open(JSON_DIR + JSON_NAME, 'w') as f:
+		# Save the JSON to a JSON file on disk
+		json.dump(struct, f)
+
+
+
+
 @auth.verify_token
 def verify_token(token):
 	if token in tokens:
 		return tokens[token]
 
-@app.route('/', methods=['POST'])
+@app.route('/uplink/messages', methods=['POST'])
 @auth.login_required
 def webhook():
-	print(request)
-	print("POST Recieved")
+	print("Request: " + str(request))
+	print("Headers: " + str(request.headers))
+	print("JSON: " + str(request.json))
+
+	requestJSON = json.load(request.json)
+
+	jsonDump(requestJSON) # Disabled for testing as it doesn't work on Windows
+
 	status_code = flask.Response(status=200)
 	return status_code
 
