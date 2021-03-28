@@ -31,7 +31,7 @@ tokens = {
 
 
 # Function to save the recieved JSON file to disk
-def jsonDump(struct):
+def jsonDump(struct, name):
 	print('JSON dump')
 	# Open a file for writing, filename will always be unique so append functions uneccessary
 	with open(JSON_DIR + JSON_NAME, 'w') as f:
@@ -41,23 +41,41 @@ def jsonDump(struct):
 
 
 
-@auth.verify_token
+#@auth.verify_token
 def verify_token(token):
 	if token in tokens:
 		return tokens[token]
 
 @app.route('/uplink/messages', methods=['POST'])
-@auth.login_required
-def webhook():
-	print("Request: " + str(request))
-	print("Headers: " + str(request.headers))
-	print("JSON: " + str(request.json))
+def uplink_messages():
+	headers = request.headers
+	auth = headers.get("X-Api-Key")
+	if auth == verify_token(auth):
+		status_code = flask.Response(status=200)
 
-	requestJSON = json.load(request.json)
+		print("Uplink Message JSON Recieved...")
+		requestJSON = json.load(request.json)
+		jsonDump(requestJSON, 'uplink_' + str(datetime.datetime.now()) + '.json') # Disabled for testing as it doesn't work on Windows
 
-	jsonDump(requestJSON) # Disabled for testing as it doesn't work on Windows
+	else:
+		status_code = flask.Response(status=401)
+	
+	return status_code
 
-	status_code = flask.Response(status=200)
+@app.route('/', methods=['POST'])
+def root():
+	headers = request.headers
+	auth = headers.get("X-Api-Key")
+	if auth == verify_token(auth):
+		status_code = flask.Response(status=200)
+
+		print("Root JSON Recieved...")
+		requestJSON = json.load(request.json)
+		jsonDump(requestJSON, 'root_' + str(datetime.datetime.now()) + '.json') # Disabled for testing as it doesn't work on Windows
+
+	else:
+		status_code = flask.Response(status=401)
+
 	return status_code
 
 # Main body
