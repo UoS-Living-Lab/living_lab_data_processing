@@ -1,0 +1,11 @@
+[Unit]
+Description=Recieves JSON messages from the Things Network
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/ttn-listener/
+ExecStart=/opt/ttn-listener/./.ttnVenv/bin/python3 /opt/ttn-listener/app.py
+
+[Install]
+WantedBy=multi-user.target
