@@ -10,25 +10,19 @@ import datetime
 from werkzeug.serving import WSGIRequestHandler
 
 
-
 # JSON & CSV storage directories
 JSON_NAME = 'ttn_' + str(datetime.datetime.now()) + '.json'
-CSV_DIR = os.getcwd() + '/data/csv/'
+#CSV_DIR = os.getcwd() + '/data/csv/'
 JSON_DIR = os.getcwd() + '/data/json/'
-
 
 # POST credentials info
 with open("./config/.apiTokens.json") as f:
 	accessTokens = json.load(f)
 
+
 # Flask app & routes
 app = Flask(__name__)
-auth = HTTPTokenAuth(scheme='Bearer')
-
-tokens = {
-	"X-Downlink-Apikey": accessTokens['X-Downlink-Apikey']
-}
-
+tokens = {"X-Downlink-Apikey": accessTokens['X-Downlink-Apikey']}
 
 # Function to save the recieved JSON file to disk
 def jsonDump(struct, name):
@@ -38,13 +32,10 @@ def jsonDump(struct, name):
 		# Save the JSON to a JSON file on disk
 		json.dump(struct, f)
 
-
-
-
-#@auth.verify_token
 def verify_token(token):
 	if token in tokens:
 		return tokens[token]
+
 
 @app.route('/uplink/messages', methods=['POST'])
 def uplink_messages():
