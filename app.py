@@ -34,7 +34,7 @@ tokens = {
 def jsonDump(struct, name):
 	print('JSON dump')
 	# Open a file for writing, filename will always be unique so append functions uneccessary
-	with open(JSON_DIR + JSON_NAME, 'w') as f:
+	with open(JSON_DIR + name, 'w') as f:
 		# Save the JSON to a JSON file on disk
 		json.dump(struct, f)
 
