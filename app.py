@@ -14,7 +14,6 @@ from werkzeug.serving import WSGIRequestHandler
 CSV_DIR = os.getcwd() + '/data/csv/'
 JSON_DIR = os.getcwd() + '/data/json/'
 
-
 # POST credentials info
 with open("./config/.apiTokens.json") as f:
 	accessTokens = json.load(f)
