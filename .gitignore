@@ -1,3 +1,6 @@
 .dlVenv
-config/*.json
 .vscode
+config/*.json
+config/*.txt
+data/json/novus/*.json
+data/json/ttn/*.json
