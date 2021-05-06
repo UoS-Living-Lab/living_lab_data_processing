@@ -4,3 +4,5 @@ config/*.json
 config/*.txt
 data/json/novus/*.json
 data/json/ttn/*.json
+data/json/*.json
+data/csv/*
