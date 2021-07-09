@@ -42,9 +42,12 @@ for file in file_list:
 	#data = pd.read_json(file, lines=True)
 	temp = temp.append(data, ignore_index = True)
 
-temp['received_at'] = pd.to_datetime(temp['received_at'])
+# "2021-03-29T12:26:09.848786419Z" 
+#temp['received_at'] = pd.to_datetime(temp['received_at'], yearfirst=True, format="%Y-%m-%dT%H:%M:%S.%z")
+temp['received_at'] = pd.to_datetime(temp['received_at'], yearfirst=True)
 temp = temp.set_index('received_at')
-csvDump("mc_ws", RESAMPLE_DATA(temp), index_set = True, index_label_usr = "Datetime")
+#csvDump("mc_ws", RESAMPLE_DATA(temp), index_set = True, index_label_usr = "Datetime")
+csvDump("mc_ws", temp, index_set = True, index_label_usr = "Datetime") # No resample data
 
 #temp.to_csv(CSV_DIR + "mc_ws" + '.csv')
 

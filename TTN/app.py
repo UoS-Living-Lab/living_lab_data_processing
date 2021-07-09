@@ -80,7 +80,8 @@ def TTN_UPLINK_MESSAGE():
 def NOVUS_ACTIVATE():
 	sys.stdout.flush()
 	#headers = request.headers
-	
+	print('Activation Endpoint Accessed...')
+
 	data = request.form.to_dict()
 	devID = data["sn"]
 
@@ -100,6 +101,7 @@ def NOVUS_ACTIVATE():
 @app.route('/onep:v1/rpc/process', methods=['POST'])
 def NOVUS_PROCESS():
 	sys.stdout.flush()
+	print('Process Endpoint Accessed...')
 	#headers = request.headers
 	devID = request.form.get("ID")
 
@@ -116,6 +118,8 @@ def NOVUS_PROCESS():
 		status_code = flask.Response(status=200)
 	else:
 		print("ID not in approved list...")
+		NA = request.json
+		NA = []
 		status_code = flask.Response(status=401)
 
 	return status_code
