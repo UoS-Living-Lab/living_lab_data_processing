@@ -6,3 +6,4 @@ data/json/novus/*.json
 data/json/ttn/*.json
 data/json/*.json
 data/csv/*
+data/jsonOld
