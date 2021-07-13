@@ -45,7 +45,7 @@ BEGIN
 		BEGIN
 			SET @modeGUID = NULL
 			SET @modeGUID = NEWID()
-			INSERT INTO dbresprod.dbo.SEL_MODES (modeGUID, modeID) VALUES (@unitGUID, @unitID)
+			INSERT INTO dbresprod.dbo.SEL_MODES (modeGUID, modeID) VALUES (@modeGUID, @modeID)
 		END
 END
 GO
@@ -63,15 +63,15 @@ BEGIN
 	)
 	BEGIN
 		SELECT @statusGUID = statusGUID
-		from dbresprod.dbo.SEL_MODES
-		WHERE modeID = @modeID
+		from dbresprod.dbo.SEL_STATUSES
+		WHERE statusID = @statusID
 	END
 
 	ELSE
 		BEGIN
 			SET @statusGUID = NULL
 			SET @statusGUID = NEWID()
-			INSERT INTO dbresprod.dbo.SEL_STATUSES (statusGUID, statusID, statusName) VALUES (@statusGUID, @statusID, @statusName)
+			INSERT INTO dbresprod.dbo.SEL_STATUSES (statusGUID, statusID) VALUES (@statusGUID, @statusID)
 		END
 END
 GO
@@ -134,7 +134,7 @@ BEGIN
 		BEGIN
 			SET @mUnitGUID = NULL
 			SET @mUnitGUID = NEWID()
-			INSERT INTO dbresprod.sbo.SEL_MEASURE_UNITS (mUnitGUID, munitName) VALUES (@munitGUID, @munitName)
+			INSERT INTO dbresprod.sbo.SEL_MEASURE_UNITS (mUnitGUID, mUnitName) VALUES (@munitGUID, @munitName)
 		END
 END
 GO
@@ -146,7 +146,7 @@ BEGIN
 	SET NOCOUNT ON;
 	SET @outputGUID = NULL
 	SET @outputGUID = NEWID()
-	INSERT INTO dbresprod.dbo.SEL_OUTPUTS (outputGUID, mUnitGUID, updateGUID, modeGUID, statusGUID, ouputID, outputName, highState, lowState) VALUES (@outputGUID, @mUnitGUID, @updateGUID, @modeGUID, @statusGUID, @ouputID, @outputName, @highState, @lowState)
+	INSERT INTO dbresprod.dbo.SEL_OUTPUTS (outputGUID, unitGUID, updateGUID, modeGUID, statusGUID, outputID, outputName, highState, lowState) VALUES (@outputGUID, @unitGUID, @updateGUID, @modeGUID, @statusGUID, @outputID, @outputName, @highState, @lowState)
 END
 GO
 
