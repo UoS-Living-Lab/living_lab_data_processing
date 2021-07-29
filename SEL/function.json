@@ -1,0 +1,6 @@
+{
+    "name": "selTimer",
+    "type": "timerTrigger",
+    "direction": "in",
+    "schedule": "0 */15 * * * *"
+}
