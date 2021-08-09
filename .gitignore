@@ -8,3 +8,4 @@ data/json/*.json
 data/csv/*
 data/jsonOld
 .env
+SEL/__pycache__
