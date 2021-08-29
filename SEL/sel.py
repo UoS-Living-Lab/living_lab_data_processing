@@ -14,6 +14,7 @@ from db import dbConnect, execProcedure, execProcedureNoReturn
 
 from uuid import UUID
 
+import ast
 
 BASE_URL = config('SEL_API_URL')
 USER_KEY = config('SEL_USER_KEY')
@@ -26,7 +27,7 @@ DB_PWD = config('AZURE_DB_PWD')
 
 
 # Formatted connection string for the SQL DB.
-SQL_CONN = "DSN={0};Database={1};Trusted_Connection=no;UID={2};PWD={3};".format(DB_URL, DB_BATABASE, DB_USR, DB_PWD)
+SQL_CONN = "DSN={0};Database={1};UID={2};PWD={3};".format(DB_URL, DB_BATABASE, DB_USR, DB_PWD)
 
 
 # Convert returned strings from the DB into GUID
@@ -62,12 +63,11 @@ def createUnits(conn, unit):
 
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
-		EXEC [dbo].[PROC_GET_OR_CREATE_SEL_UNIT] @unitID = ?, @unitName= ?, @param_out = @out OUTPUT;
+		EXEC [dbo].[PROC_GET_OR_CREATE_SEL_UNIT] @unitID = ?, @unitName= ?, @unitGUID = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (unit['name'].values(), unit['id'].values())
+	params = (unit['id'], unit['name'])
 
-	#sensorGUID = 
 	return execProcedure(conn, sql, params)
 
 
@@ -85,6 +85,33 @@ def getData(unitID):
 
 		return recJSON
 
+# Create new reading
+def create_readings(conn, reading):
+	print('Create Reading')
+
+	# Split recieved JSON into dicts
+	requests = reading
+	blocks = reading['blocks']
+
+
+	#measure_units
+	#types
+
+	#updates
+	#statuses
+	#modes
+	
+
+	#outputs
+	#requests
+	#alarms
+	#readings
+	
+
+	# 
+	sql = """ \
+		
+		"""
 
 # Main body
 if __name__ == '__main__':
@@ -97,8 +124,12 @@ if __name__ == '__main__':
 
 	print(unitsList)
 
-	for row in enumerate(unitsList):
+	for i, row in enumerate(unitsList):
+		print(row)
 		unitGUIDs.append(strToUUID(createUnits(conn, row)))
+
+	for row in enumerate(unitGUIDs):
+		print (row)
 
 	conn.commit()
 	conn.close()
