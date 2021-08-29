@@ -9,3 +9,7 @@ data/csv/*
 data/jsonOld
 .env
 SEL/__pycache__
+monnit/config/*.txt
+/ttn/data/json/*
+/ttn/data/csv/*
+/ttn/jupyter/*.png
