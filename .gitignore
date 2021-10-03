@@ -13,3 +13,4 @@ monnit/config/*.txt
 /ttn/data/json/*
 /ttn/data/csv/*
 /ttn/jupyter/*.png
+/sel/data
