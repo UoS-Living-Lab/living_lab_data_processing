@@ -1,8 +1,19 @@
+"""
+Helper file containing common functions for 
+interfacing with the AZURE database
+"""
+
+
+__author__ = "Ethan Bellmer"
+__version__ = "0.1"
+
+
 import pyodbc
+from flask import g
 
 
 # Function for establishing a connection to the database
-def dbConnect(SQL_CONN_STR):
+def db_connect(SQL_CONN_STR):
 	try:
 		print('Connecting to database...')
 		# Create a new connection to the SQL Server using the prepared connection string
@@ -17,7 +28,7 @@ def dbConnect(SQL_CONN_STR):
 
 
 # Executes a Stored Procedure in the database to get or create data
-def execProcedure(conn, sql, params):
+def execute_procedure(conn, sql, params):
 	# Create new cursor from existing connection 
 	cursor = conn.cursor()
 
@@ -49,7 +60,7 @@ def execProcedure(conn, sql, params):
 
 
 # Executes a Stored Procedure in the database to create data without returning any values 
-def execProcedureNoReturn(conn, sql, params):
+def execute_procedure_no_return(conn, sql, params):
 	# Create new cursor from existing connection 
 	cursor = conn.cursor()
 
@@ -69,3 +80,24 @@ def execProcedureNoReturn(conn, sql, params):
 		# Print error is one should occur and raise an exception
 		print("An error occurred executing stored procedure (noReturn): " + sqlstate)
 		print(e) # Testing
+
+
+# Helper function to get DB and return it to the 
+def get_db(SQL_CONN_STR):
+	if 'db' not in g:
+		g.db = db_connect(SQL_CONN_STR)
+	return g.db
+
+
+def commit_db(e=None):
+	if 'db' not in g:
+		print('DB Connection doesn\'t exist')
+	else:
+		g.db.commit() # Commit the staged data to the DB
+
+
+def close_db(e=None):
+	db = g.pop('db', None)
+
+	if db is not None:
+		db.close() # Close the DB connection
