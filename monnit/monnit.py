@@ -7,11 +7,7 @@ concatonated data from the received data.
 
 
 __author__ = "Ethan Bellmer"
-__version__ = "1"
-
-
-# Venv activation is blocked by default because the process isn't singed, so run this first:
-# Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+__version__ = "1.0"
 
 
 # Import libraries
@@ -21,17 +17,13 @@ from flask.cli import with_appcontext
 from flask.wrappers import Response
 from flask_basicauth import BasicAuth
 from werkzeug.serving import WSGIRequestHandler
-
 import pandas as pd
 from pandas import json_normalize
-
 import pyodbc
-
-from uuid import UUID
-
 from decouple import config
 
-from db import dbConnect, execProcedure, execProcedureNoReturn
+from db import exec_procedure, execute_procedure_no_return, get_db, commit_db, close_db
+from functions import flask_to_to_uuid, split_dataframe_rows, remove_trailing_values, air_quality_processing, filter_network
 
 
 DB_URL = config('AZURE_DB_SERVER')
@@ -67,118 +59,6 @@ app.config['BASIC_AUTH_FORCE'] = True
 basic_auth = BasicAuth(app)
 
 
-# Convert returned strings from the DB into GUID
-def strToUUID(struct):
-	# Remove the leading and trailing characters from the ID
-	struct = struct.replace("[('", "")
-	struct = struct.replace("', )]", "")
-	# Convert trimmed string into a GUID (UUID)
-	g.strUUID =  UUID(struct)
-
-	# Return to calling function
-	return g.strUUID
-
-# Helper function to get DB and return it to the 
-def getDB():
-	if 'db' not in g:
-		g.db = dbConnect()
-	return g.db
-
-def commitDB(e=None):
-	if 'db' not in g:
-		print('DB Connection doesn\'t exist')
-	else:
-		g.db.commit() # Commit the staged data to the DB
-
-def closeDB(e=None):
-	db = g.pop('db', None)
-
-	if db is not None:
-		db.close() # Close the DB connection
-
-
-# Function for splitting dataframes with concatonated values into multiple rows
-# Solution provided by user: zouweilin
-# Solution link: https://gist.github.com/jlln/338b4b0b55bd6984f883
-# Modified to use a delimeter regex pattern, so rows can be split using different delimeters
-# TODO: #2 Fix 'pop from empty stack' error while parsing through sensors without a split 
-import re
-def split_dataframe_rows(df,column_selectors, delimiters):
-	# we need to keep track of the ordering of the columns
-	print('Splitting rows...')
-	regexPattern = "|".join(map(re.escape,delimiters))
-	def _split_list_to_rows(row,row_accumulator,column_selector,regexPattern):
-		split_rows = {}
-		max_split = 0
-		for column_selector in column_selectors:
-			split_row = re.split(regexPattern,row[column_selector])
-			split_rows[column_selector] = split_row
-			if len(split_row) > max_split:
-				max_split = len(split_row)
-			
-		for i in range(max_split):
-			new_row = row.to_dict()
-			for column_selector in column_selectors:
-				try:
-					new_row[column_selector] = split_rows[column_selector].pop(0)
-				except IndexError:
-					new_row[column_selector] = ''
-			row_accumulator.append(new_row)
-
-	new_rows = []
-	df.apply(_split_list_to_rows,axis=1,args = (new_rows,column_selectors,regexPattern))
-	new_df = pd.DataFrame(new_rows, columns=df.columns)
-	return new_df
-
-
-# Monnit data contains trailing values on sensors with more than one measurand, 
-# 	and needs to be processed out before properly splitting.
-# This function should check the name of the sensors for a list of known sensor 
-# 	types and remove the trailing values.
-def rmTrailingValues(df, sensors):
-	print ('Removing trailing values from sensors')
-
-	# Pre-compile the regex statement for the used sensors using the list of sensors provided via paraeter
-	p = re.compile('|'.join(map(re.escape, sensors)), flags=re.IGNORECASE)
-	# Locate any entries that begin with the sensor names provided in the list 
-	# 	using the prepared regex and remove 4 characters from the raw data variable
-	#df.loc[[bool(p.match(x)) for x in df['sensorName']], ['rawData']] = df['rawData'].str[:-4]
-	df.loc[[bool(p.match(x)) for x in df['sensorName']], ['rawData']] = df.loc[[bool(p.match(x)) for x in df['sensorName']], 'rawData'].astype('str').str[:-4]
-
-	return df
-
-
-# Multiple networks can be configured on the Monnit system. 
-# This function will filter out unwanted networks by keeping 
-# 	networks with the IDs that are passed to the function.
-def filterNetwork(df, networkID):
-	print('Filtering out unwanted network')
-	df = df[df.networkID == networkID]
-	return df
-
-
-def aqProcessing(df):
-	print("Processing AQ sensor data")
-	# Add an additional '0' to dataValue and rawData columns to preserve varible ordering when the variable is split
-	df.loc[(df.plotLabels == '?g/m^3|PM1|PM2.5|PM10'), 'dataValue'] = "0|" + df.loc[(df.plotLabels == '?g/m^3|PM1|PM2.5|PM10'), 'dataValue']
-	df.loc[(df.plotLabels == '?g/m^3|PM1|PM2.5|PM10'), 'rawData'] = "0%7c" + df.loc[(df.plotLabels == '?g/m^3|PM1|PM2.5|PM10'), 'rawData']
-	# Add another occurance of 'Micrograms' to the dataType column to prevent Null entries upon splitting the dataframe. 
-	df.loc[(df.dataType == 'Micrograms|Micrograms|Micrograms'), 'dataType'] = 'Micrograms|Micrograms|Micrograms|Micrograms'
-
-	# Create a dataframe from Air Quality entries
-	includedColumns = df.loc[df['plotLabels']=='?g/m^3|PM1|PM2.5|PM10']
-	for i, x in includedColumns.iterrows():
-		# Split the data so it can be re-rodered
-		rawDataList = x.rawData.split('%7c')
-		# Re-order the processed data into the proper order (PM1, 2.5, 10) and insert the original split delimiter
-		includedColumns.loc[i, 'rawData'] = str(rawDataList[0]) + '%7c' + str(rawDataList[3]) + '%7c' + str(rawDataList[1]) + '%7c' + str(rawDataList[2])
-			
-	# Overrite the air quality data with the modified data that re-orders the variables 
-	df = includedColumns.combine_first(df)
-
-	return df
-
-
 # Main body
 @app.route('/', methods=['POST'])
 @basic_auth.required
@@ -197,9 +77,9 @@ def webhook():
 	sensorMessages = json_normalize(sensorMessages)
 
 	# Remove the trailing values present in the rawData field of some sensors
-	sensorMessages = rmTrailingValues(sensorMessages, sensorTypes)
+	sensorMessages = remove_trailing_values(sensorMessages, sensorTypes)
 	# Process any sensor messages for Air Quality
-	sensorMessages = aqProcessing(sensorMessages)
+	sensorMessages = air_quality_processing(sensorMessages)
 	# Filter out messages from networks not related to MOVE
 	#sensorMessages = filterNetwork(sensorMessages, str(58947))		# Not needed Living Lab only uses one network
 
@@ -213,7 +93,7 @@ def webhook():
 
 
 	# CONNECT TO DB HERE
-	conn = getDB()
+	conn = get_db(SQL_CONN_STR)
 
 
 	# ADDITIONAL PROCESSING HERE
@@ -232,7 +112,7 @@ def webhook():
 		# Execute the stored procedure to create a network if it doesn't exist, 
 		# and ignore input if exists
 		print('Step 1/10: Creating network entry')
-		execProcedureNoReturn(conn, sql, params)
+		execute_procedure_no_return(conn, sql, params)
 		print('Network entry created')
 
 
@@ -246,7 +126,7 @@ def webhook():
 		# Execute the stored procedure to create an application if it doesn't exist, 
 		# and ignore input if exists
 		print('Step 2/10: Creating application entry')
-		execProcedureNoReturn(conn, sql, params)
+		execute_procedure_no_return(conn, sql, params)
 		print('Network application created')
 
 
@@ -268,7 +148,7 @@ def webhook():
 		# create a new sensor in the DB, or get an existing one.
 		print('Step 3/10: Creating or getting sensor')
 		# Execute the procedure and return sensorID and convert trimmed string into a GUID (UUID)
-		sensorData['sensorID'] = strToUUID(execProcedure(conn, sql, params))
+		sensorData['sensorID'] = flask_to_to_uuid(exec_procedure(conn, sql, params))
 		print(sensorData['sensorID'])
 		
 
@@ -286,7 +166,7 @@ def webhook():
 		# Execute the procedure using the prepared SQL & parameters to 
 		# create a new sensor in the DB, or get an existing one.
 		print('Step 4/10: Creating or getting data type ID')
-		sensorData['dataTypeID'] = strToUUID(execProcedure(conn, sql, params))
+		sensorData['dataTypeID'] = flask_to_to_uuid(exec_procedure(conn, sql, params))
 		print(sensorData['dataTypeID'])
 
 
@@ -303,7 +183,7 @@ def webhook():
 		# Execute the procedure using the prepared SQL & parameters to 
 		# create a new plot label in the DB, or get an existing one.
 		print('Step 5/10: Creating or getting plot label ID')
-		sensorData['plotLabelID'] = strToUUID(execProcedure(conn, sql, params)) ## Problem here?
+		sensorData['plotLabelID'] = flask_to_to_uuid(exec_procedure(conn, sql, params)) ## Problem here?
 		
 
 		## GET OR CREATE READING ##
@@ -321,7 +201,7 @@ def webhook():
 		# Execute the procedure using the prepared SQL & parameters to 
 		# create a new reading in the DB, and return the genreated ID.
 		print('Step 6/10: Creating reading, and getting ID')
-		sensorData['readingID'] = strToUUID(execProcedure(conn, sql, params))
+		sensorData['readingID'] = flask_to_to_uuid(exec_procedure(conn, sql, params))
 		
 
 		## GET OR CREATE SIGNAL STATUS ##
@@ -335,7 +215,7 @@ def webhook():
 		# Execute the procedure using the prepared SQL & parameters to 
 		# create a new signal status in the DB.
 		print('Step 7/10: Creating signal atatus')
-		execProcedureNoReturn(conn, sql, params)
+		execute_procedure_no_return(conn, sql, params)
 		
 
 		## GET OR CREATE BATTERY STATUS ##
@@ -348,7 +228,7 @@ def webhook():
 		# Execute the procedure using the prepared SQL & parameters to 
 		# create a new battery status in the DB.
 		print('Step 8/10: Creating battery status')
-		execProcedureNoReturn(conn, sql, params)
+		execute_procedure_no_return(conn, sql, params)
 		
 
 		## GET OR CREATE PENDING CHANGES ##
@@ -362,7 +242,7 @@ def webhook():
 		# Execute the procedure using the prepared SQL & parameters to 
 		# create a new pending change in the DB.
 		print('Step 9/10: Creating pending change')
-		execProcedureNoReturn(conn, sql, params)
+		execute_procedure_no_return(conn, sql, params)
 		
 
 		## GET OR CREATE SENSOR VOLTAGE ##
@@ -376,11 +256,11 @@ def webhook():
 		# Execute the procedure using the prepared SQL & parameters to 
 		# create a new voltage entry in the DB.
 		print('Step 10/10: Creating voltage reading')
-		execProcedureNoReturn(conn, sql, params)
+		execute_procedure_no_return(conn, sql, params)
 
 	# Commit data and close open database connection
-	commitDB()
-	closeDB()
+	commit_db()
+	close_db()
 
 	# Return status 200 (success) to the remote client
 	status_code = Response(status=200)
