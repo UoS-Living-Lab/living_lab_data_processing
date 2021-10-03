@@ -1,3 +1,12 @@
+"""
+
+"""
+
+
+__author__ = "Ethan Bellmer"
+__version__ = "1.0"
+
+
 import os
 import pyodbc
 import flask
@@ -76,29 +85,7 @@ def TTN_UPLINK_MESSAGE():
 
 
 #	NOVUS Listener
-@app.route('/provision/activate', methods=['POST'])
-def NOVUS_ACTIVATE():
-	sys.stdout.flush()
-	#headers = request.headers
-	print('Activation Endpoint Accessed...')
-
-	data = request.form.to_dict()
-	devID = data["sn"]
-
-	print("devID: " + str(devID))
-
-	if devID == verify_token(devID):
-		print("Method: " + str(request.method))
-		print("Form: " + str(request.form))
-		print("Headers: " + str(request.headers))
-		print(str(request.host_url))
-		status_code = flask.Response(status=200, response="68b30835a221da4f9ea940dac83871f8497a0000", content_type="text/plain")
-	else:
-		print("ID not in approved list...")
-		status_code = flask.Response(status=401)
-	return status_code
-
-@app.route('/onep:v1/rpc/process', methods=['POST'])
+@app.route('/novus/data', methods=['POST'])
 def NOVUS_PROCESS():
 	sys.stdout.flush()
 	print('Process Endpoint Accessed...')
