@@ -10,16 +10,12 @@ __version__ = "0.1"
 
 from os import read
 import pandas as pd
-import pyodbc
 import requests
-import datetime
+from datetime import datetime
 from decouple import config
-import ast
 
-from db import db_connect, execute_procedure, execute_procedure_no_return
-from functions import str_to_uuid
-
-import json
+from living_lab_functions.db import db_connect, execute_procedure, execute_procedure_no_return
+from living_lab_functions.functions import str_to_uuid
 
 
 BASE_URL = config('SEL_API_URL')
@@ -85,11 +81,10 @@ def create_measure_units(conn, unit):
 	print('Create Measurement Units')
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
-		EXEC [dbo].[PROC_GET_OR_CREATE_SEL_MEASURE_UNIT] @mUniitName = ?, @mUnitGUID = @out OUTPUT;
+		EXEC [dbo].[PROC_GET_OR_CREATE_SEL_MEASURE_UNIT] @mUnitName = ?, @mUnitGUID = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (unit['units'])
-
+	params = unit
 	return execute_procedure(conn, sql, params, True)
 
 
@@ -101,7 +96,7 @@ def create_type(conn, type):
 		EXEC [dbo].[PROC_GET_OR_CREATE_SEL_TYPE] @typeID = ?, @typeGUID = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (type['id'], type['name'])
+	params = type
 	return execute_procedure(conn, sql, params, True)
 
 
@@ -113,7 +108,7 @@ def create_status(conn, status):
 		EXEC [dbo].[PROC_GET_OR_CREATE_SEL_STATUS] @statusID = ?, @statusGUID = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (status['id'])
+	params = status
 	return execute_procedure(conn, sql, params, True)
 
 
@@ -125,19 +120,20 @@ def create_mode(conn, mode):
 		EXEC [dbo].[PROC_GET_OR_CREATE_SEL_MODE] @modeID = ?, @modeGUID = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (mode['id'])
+	params = mode
 	return execute_procedure(conn, sql, params, True)
 
 
 # 
-def create_update(conn, datetime):
+def create_update(conn, date_time):
 	print('Create Datetime Update')
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_CREATE_UPDATE] @lastUpdate = ?, @updateGUID = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (datetime['last_update'])
+	params = datetime.strptime(date_time, '%Y-%m-%d %H:%M:%S')
+	
 	return execute_procedure(conn, sql, params, True)
 
 
@@ -147,37 +143,38 @@ def create_request(conn, reading, unitGUID):
 
 	request = reading
 	details = request['details']
-	blocks = request['blocks']
+	blocks = request['blocks'][0]
 
-	updateGUID = create_update(conn, details['last_update'])
-	modeGUID = create_mode(conn, blocks['mode'])
+	updateGUID = str_to_uuid(create_update(conn, details['last_update']))
+	modeGUID = str_to_uuid(create_mode(conn, blocks['mode']))
 
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_CREATE_SEL_REQUEST] @unitGUID = ?, @updateGUID = ?, @modeGUID = ?, @success = ?, @requestMessage = ?, @requestNow = ?, @requestName = ?, @tz = ?, @updateCycle = ?, @requestGUID = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (unitGUID, updateGUID, modeGUID, request['seccess'], request['message'], request['now'], details['name'], details['tz'], details['update_cycle'])
+	params = (unitGUID, updateGUID, modeGUID, bool(request['success']), request['message'], datetime.strptime(request['now'], '%Y-%m-%dT%H:%M:%S%z'), details['name'], details['tz'], details['update_cycle'])
 	return execute_procedure(conn, sql, params)
 
 
 # Create new reading
-def create_readings(conn, reading, unitGUID):	###
+def create_reading(conn, reading, unitGUID):	###
 	print('Create Reading')
 
 	# Split recieved JSON into dicts
 	blocks = reading['blocks'][0]	# Blocks are returned as a list of dicts but are all contained in list enty 0, so get that
 	analogs = blocks['analogs']
 	
-	for data in enumerate(analogs):
-		print('Processing Analogs/Readings')
-	
-		mUnitGUID = create_measure_units(conn, data['units'])
+	for i, data in enumerate(analogs):
+		mUnitGUID = str_to_uuid(create_measure_units(conn, data['units']))
 
 		sql = """ \
-			EXEC [dbo].[PROC_CREATE_SEL_READING] @unitGUID = ?, @mUnitGUID= ?, @analogID = ?, @readingName = ?, @readingValue = ?, @recharge = ?, @cyclePulses = ?, @readingStart = ?, @readingStop = ?, @dp = ?;
+			DECLARE @out UNIQUEIDENTIFIER;
+			EXEC [dbo].[PROC_CREATE_SEL_READING] @unitGUID = ?, @mUnitGUID= ?, @analogID = ?, @readingName = ?, @readingValue = ?, @recharge = ?, @cyclePulses = ?, @readingStart = ?, @readingStop = ?, @dp = ?, @readingGUID = @out OUTPUT;
+			SELECT @out AS the_output;
 			"""
-		params = (unitGUID, mUnitGUID, data['aid'], data['name'], data['value'], data['recharge'], data['cycle_pulses'], data['start'], data['stop'], data['dp'])
+		params = (unitGUID, mUnitGUID, int(data['aid']), data['name'], data['value'], int(data['recharge']), float(data['cycle_pulses']), float(data['start']), float(data['stop']), int(data['dp']))
+
 		return execute_procedure(conn, sql, params)
 
 
@@ -187,17 +184,17 @@ def create_output(conn, reading, unitGUID):	###
 	blocks = reading['blocks'][0]	# Blocks are returned as a list of dicts but are all contained in list enty 0, so get that
 	outputs = blocks['outputs']
 
-	for data in enumerate(outputs):
-		print('Processing Outputs')
-
-		updateGUID = create_update(conn, data['last_change'])
-		modeGUID = create_mode(conn, data['mode'])
-		statusGUID = create_status(conn, data['status'])
+	for i, data in enumerate(outputs):
+		updateGUID = str_to_uuid(create_update(conn, data['last_update']))
+		modeGUID = str_to_uuid(create_mode(conn, data['mode']))
+		statusGUID = str_to_uuid(create_status(conn, data['status']))
 
 		sql = """ \
-			EXEC [dbo].[PROC_CREATE_SEL_READING] @unitGUID = ?, @updateGUID= ?, @modeGUID = ?, @statusGUID = ?, @outputID = ?, @outputName = ?, @highstate = ?, @lowstate = ?;
+			DECLARE @out UNIQUEIDENTIFIER;
+			EXEC [dbo].[PROC_CREATE_SEL_OUTPUT] @unitGUID = ?, @updateGUID= ?, @modeGUID = ?, @statusGUID = ?, @outputID = ?, @outputName = ?, @highstate = ?, @lowstate = ?, @outputGUID = @out OUTPUT;
+			SELECT @out AS the_output;
 			"""
-		params = (unitGUID, updateGUID, modeGUID, statusGUID, data['oid'], data['name'], data['high_state'], data['low_state'])
+		params = (unitGUID, updateGUID, modeGUID, statusGUID, int(data['oid']), data['name'], data['high_state'], data['low_state'])
 		return execute_procedure(conn, sql, params)
 
 
@@ -206,17 +203,17 @@ def create_alarm(conn, reading, unitGUID):	###
 	print('Create Alarm')
 	blocks = reading['blocks'][0]	# Blocks are returned as a list of dicts but are all contained in list enty 0, so get that
 	alarms = blocks['alarms']
-	for data in enumerate(alarms):
-		print('Processing Alarms')
-
-		typeGUID = create_type(conn, data['type'])
-		statusGUID = create_status(conn, data['status'])
-		mUnitGUID = create_measure_units(conn, data['units'])
+	for i, data in enumerate(alarms):
+		typeGUID = str_to_uuid(create_type(conn, data['type']))
+		statusGUID = str_to_uuid(create_status(conn, data['status']))
+		mUnitGUID = str_to_uuid(create_measure_units(conn, data['pulse_units']))
 
 		sql = """ \
-			EXEC [dbo].[PROC_CREATE_SEL_READING] @unitGUID = ?, @typeGUID= ?, @statusGUID = ?, @mUnitGUID = ?, @alarmID = ?, @alarmName = ?, @lastChange = ?, @healthyName = ?, @faultyName = ?, @pulseTotal = ?;
+			DECLARE @out UNIQUEIDENTIFIER;
+			EXEC [dbo].[PROC_CREATE_SEL_ALARM] @unitGUID = ?, @typeGUID= ?, @statusGUID = ?, @mUnitGUID = ?, @alarmID = ?, @alarmName = ?, @lastChange = ?, @healthyName = ?, @faultyName = ?, @pulseTotal = ?, @alarmGUID = @out OUTPUT;
+			SELECT @out AS the_output;
 			"""
-		params = (unitGUID, typeGUID, statusGUID, mUnitGUID, data['aid'], data['name'], data['last_change'], data['healthy_name'], data['faulty_name'], data['pulse_total'])
+		params = (unitGUID, typeGUID, statusGUID, mUnitGUID, int(data['aid']), data['name'], datetime.strptime(data['last_change'], '%Y-%m-%d %H:%M:%S'), data['healthy_name'], data['faulty_name'], float(data['pulse_total']))
 		return execute_procedure(conn, sql, params)
 
 
@@ -230,49 +227,19 @@ if __name__ == '__main__':
 	conn = db_connect(SQL_CONN)	
 	
 	unitsList = get_units() # Get GUIDs for all connected devices via SEL API
-	print(unitsList)
-
+	
 
 	# Create new units & get sensor data from API
 	for i, row in enumerate(unitsList):
-		#print('Processing Unit #' + str(i))
 		unitGUIDs.append(str_to_uuid(create_units(conn, row)))	# Create unit using retrieved data, or return unit GUID
 		readingsJSON.append(get_data(row['id']))	# Get data for current sensor in loop, returns JSON
 		
 
-	for i, row in enumerate(readingsJSON):
-		print('Processing JSON #' + str(i))
-		#tmp = json.loads(row)
+	for i, row in enumerate(readingsJSON):	
 		create_request(conn, row, unitGUIDs[i])		# Insertion order: 06
-		create_readings(conn, row, unitGUIDs[i])	# Insertion order: 10
+		create_reading(conn, row, unitGUIDs[i])	# Insertion order: 10
 		create_output(conn, row, unitGUIDs[i])		# Insertion order: 08
 		create_alarm(conn, row, unitGUIDs[i])		# Insertion order: 11
 
 	conn.commit()
 	conn.close()
-
-	#print(unitGUIDs)
-
-# Process for getting data
-## Get list of units first
-## Attempt to store units
-##
-
-
-# unit
-# mode
-# update
-# request 
-
-#measure_units
-#types
-
-#updates
-#statuses
-#modes
-
-
-#outputs
-#requests
-#alarms
-#readings
