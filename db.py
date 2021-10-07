@@ -5,7 +5,7 @@ interfacing with the AZURE database
 
 
 __author__ = "Ethan Bellmer"
-__version__ = "0.1"
+__version__ = "0.2"
 
 
 import pyodbc
@@ -28,38 +28,56 @@ def db_connect(SQL_CONN_STR):
 
 
 # Executes a Stored Procedure in the database to get or create data
-def execute_procedure(conn, sql, params):
+def execute_procedure(conn, sql, params, return_val = False):
 	# Create new cursor from existing connection 
 	cursor = conn.cursor()
 
-	# Attempt to execute the stored procedure
-	try:
-		# Execute the SQL statement with the parameters prepared
-		cursor.execute(sql, params)
-		# Fetch all results for the executed statement
-		rows = cursor.fetchall()
-		while rows:
-			print(rows)
-			return str(rows)
-			#if cursor.nextset(): # Disabled during testing, unsure if required if result will always return one result
-			#	rows = cursor.fetchall()
-			#else:
-			#	rows = None
-		# Close open database cursor
-		cursor.close()
+	if return_val:
+		# Attempt to execute the stored procedure
+		try:
+			# Execute the SQL statement with the parameters prepared
+			cursor.execute(sql, params)
+			# Fetch all results for the executed statement
+			rows = cursor.fetchall()
+			while rows:
+				print(rows)
+				return str(rows)
+				#if cursor.nextset(): # Disabled during testing, unsure if required if result will always return one result
+				#	rows = cursor.fetchall()
+				#else:
+				#	rows = None
+			# Close open database cursor
+			cursor.close()
 
-	except pyodbc.Error as e:
-		# Extract the error argument
-		sqlstate = e.args[1]
+		except pyodbc.Error as e:
+			# Extract the error argument
+			sqlstate = e.args[1]
 
-		# Close cursor
-		cursor.close()
+			# Close cursor
+			cursor.close()
 
-		# Print error is one should occur and raise an exception
-		print("An error occurred executing stored procedure: " + sqlstate)
+			# Print error is one should occur and raise an exception
+			print("An error occurred executing stored procedure: " + sqlstate)
+	else:
+		try:
+			# Execute the SQL statement with the parameters prepared
+			cursor.execute(sql, params)
+			# Close open database cursor
+			cursor.close()
+
+		except pyodbc.Error as e:
+			# Extract the error argument
+			sqlstate = e.args[1]
+
+			# Close cursor
+			cursor.close()
+
+			# Print error is one should occur and raise an exception
+			print("An error occurred executing stored procedure: " + sqlstate)
 
 
-# Executes a Stored Procedure in the database to create data without returning any values 
+# Executes a Stored Procedure in the database to create data without returning any values
+# Legacy code, merged into execture_procedure function
 def execute_procedure_no_return(conn, sql, params):
 	# Create new cursor from existing connection 
 	cursor = conn.cursor()
