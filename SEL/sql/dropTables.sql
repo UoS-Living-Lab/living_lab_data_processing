@@ -8,4 +8,5 @@ DROP TABLE dbresprod.dbo.SEL_UPDATES;
 DROP TABLE dbresprod.dbo.SEL_STATUSES;
 DROP TABLE dbresprod.dbo.SEL_MODES;
 DROP TABLE dbresprod.dbo.SEL_UNITS;
+DROP TABLE dbresprod.dbo.SEL_SENSORS;
 GO

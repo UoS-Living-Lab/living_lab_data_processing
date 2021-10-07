@@ -24,6 +24,7 @@ BEGIN
 END
 GO
 
+
 /* Check if a Mode exists, create if it doesnt, or select GUID if it does */
 CREATE PROCEDURE PROC_GET_OR_CREATE_SEL_MODE (@modeID AS INT, @modeGUID AS UNIQUEIDENTIFIER OUTPUT)
 AS
@@ -49,6 +50,7 @@ BEGIN
 		END
 END
 GO
+
 
 /* Check if a Status exists, create if it doesnt, or select GUID if it does */
 CREATE PROCEDURE PROC_GET_OR_CREATE_SEL_STATUS (@statusID AS INT, @statusGUID AS UNIQUEIDENTIFIER OUTPUT)
@@ -76,8 +78,9 @@ BEGIN
 END
 GO
 
+
 /* Check if a Update exists, create if it doesnt, or select GUID if it does */
-CREATE PROCEDURE PROC_CREATE_UPDATE (@lastUpdate AS DATETIME, @updateGUID AS UNIQUEIDENTIFIER OUTPUT)
+CREATE PROCEDURE PROC_CREATE_SEL_UPDATE (@lastUpdate AS DATETIME, @updateGUID AS UNIQUEIDENTIFIER OUTPUT)
 AS
 BEGIN
 	SET NOCOUNT ON;
@@ -86,6 +89,34 @@ BEGIN
 	INSERT INTO dbresprod.dbo.SEL_UPDATES (updateGUID, lastUpdate) VALUES (@updateGUID, @lastUpdate)
 END
 GO
+
+
+/* Check if a Type exists, create if it doesnt, or select GUID if it does */
+CREATE PROCEDURE PROC_CREATE_SEL_SENSOR (@sensorName AS NVARCHAR(20), @sensorGUID AS UNIQUEIDENTIFIER OUTPUT)
+AS
+BEGIN
+	SET NOCOUNT ON;
+	IF EXISTS
+	(
+		SELECT sensorGUID
+		from dbresprod.dbo.SEL_SENSORS
+		WHERE sensorName = @sensorName
+	)
+	BEGIN
+		SELECT @sensorGUID = sensorGUID
+		FROM dbresprod.dbo.SEL_SENSORS
+		WHERE sensorName = @sensorName
+	END
+
+	ELSE
+		BEGIN
+			SET @sensorGUID = NULL
+			SET @sensorGUID = NEWID()
+			INSERT INTO dbresprod.dbo.SEL_SENSORS (sensorGUID, sensorName) VALUES (@sensorGUID, @sensorName)
+		END
+END
+GO
+
 
 /* Check if a Type exists, create if it doesnt, or select GUID if it does */
 CREATE PROCEDURE PROC_GET_OR_CREATE_SEL_TYPE (@typeID AS INT, @typeGUID AS UNIQUEIDENTIFIER OUTPUT)
@@ -113,6 +144,7 @@ BEGIN
 END
 GO
 
+
 /* Check if a Measurement Unit exists, create if it doesnt, or select GUID if it does */
 CREATE PROCEDURE PROC_GET_OR_CREATE_SEL_MEASURE_UNIT (@mUnitName AS NVARCHAR(20), @mUnitGUID AS UNIQUEIDENTIFIER OUTPUT)
 AS
@@ -139,6 +171,7 @@ BEGIN
 END
 GO
 
+
 /* Check if an Output exists, create if it doesnt, or select GUID if it does */
 CREATE PROCEDURE PROC_CREATE_SEL_OUTPUT (@unitGUID AS UNIQUEIDENTIFIER, @updateGUID AS UNIQUEIDENTIFIER, @modeGUID AS UNIQUEIDENTIFIER, @statusGUID AS UNIQUEIDENTIFIER, @outputID AS INT, @outputName AS NVARCHAR(50), @highstate AS NVARCHAR(5), @lowstate AS NVARCHAR(5), @outputGUID AS UNIQUEIDENTIFIER OUTPUT)
 AS
@@ -149,6 +182,7 @@ BEGIN
 	INSERT INTO dbresprod.dbo.SEL_OUTPUTS (outputGUID, unitGUID, updateGUID, modeGUID, statusGUID, outputID, outputName, highState, lowState) VALUES (@outputGUID, @unitGUID, @updateGUID, @modeGUID, @statusGUID, @outputID, @outputName, @highState, @lowState)
 END
 GO
+
 
 /* Check if an Request exists, create if it doesnt, or select GUID if it does */
 CREATE PROCEDURE PROC_CREATE_SEL_REQUEST (@unitGUID AS UNIQUEIDENTIFIER, @updateGUID AS UNIQUEIDENTIFIER, @modeGUID AS UNIQUEIDENTIFIER, @success AS BIT, @requestMessage AS NVARCHAR(35), @requestNow AS DATETIME, @requestName AS NVARCHAR(50), @tz AS NVARCHAR(25), @updateCycle AS INT, @requestGUID AS UNIQUEIDENTIFIER OUTPUT)
@@ -161,6 +195,7 @@ BEGIN
 END
 GO
 
+
 /* Check if an Alarm exists, create if it doesnt, or select GUID if it does */
 CREATE PROCEDURE PROC_CREATE_SEL_ALARM (@unitGUID AS UNIQUEIDENTIFIER, @typeGUID AS UNIQUEIDENTIFIER, @statusGUID AS UNIQUEIDENTIFIER, @mUnitGUID AS UNIQUEIDENTIFIER, @alarmID AS INT, @alarmName AS NVARCHAR(50), @lastChange AS DATETIME, @healthyName AS NVARCHAR(10), @faultyName AS NVARCHAR(10), @pulseTotal AS FLOAT, @alarmGUID AS UNIQUEIDENTIFIER OUTPUT)
 AS
@@ -172,13 +207,14 @@ BEGIN
 END
 GO
 
+
 /* Check if an Reading exists, create if it doesnt, or select GUID if it does */
-CREATE PROCEDURE PROC_CREATE_SEL_READING (@unitGUID AS UNIQUEIDENTIFIER, @mUnitGUID AS UNIQUEIDENTIFIER, @analogID AS INT, @readingName AS NVARCHAR(50), @readingValue AS NVARCHAR(10), @recharge AS INT, @cyclePulses AS FLOAT, @readingStart AS FLOAT, @readingStop AS FLOAT, @dp AS INT, @readingGUID AS UNIQUEIDENTIFIER OUTPUT)
+CREATE PROCEDURE PROC_CREATE_SEL_READING (@unitGUID AS UNIQUEIDENTIFIER, @mUnitGUID AS UNIQUEIDENTIFIER, @sensorGUID AS UNIQUEIDENTIFIER, @analogID AS INT, @readingValue AS NVARCHAR(10), @recharge AS INT, @cyclePulses AS FLOAT, @readingStart AS FLOAT, @readingStop AS FLOAT, @dp AS INT, @readingGUID AS UNIQUEIDENTIFIER OUTPUT)
 AS
 BEGIN
 	SET NOCOUNT ON;
 	SET @readingGUID = NULL
 	SET @readingGUID = NEWID()
-	INSERT INTO dbresprod.dbo.SEL_READINGS (readingGUID, unitGUID, mUnitGUID, analogID, readingName, readingValue, recharge, cyclePulses, readingStart, readingStop, dp) VALUES (@readingGUID, @unitGUID, @mUnitGUID, @analogID, @readingName, @readingValue, @recharge, @cyclePulses, @readingStart, @readingStop, @dp)
+	INSERT INTO dbresprod.dbo.SEL_READINGS (readingGUID, unitGUID, mUnitGUID, sensorGUID, analogID, readingValue, recharge, cyclePulses, readingStart, readingStop, dp) VALUES (@readingGUID, @unitGUID, @mUnitGUID, @sensorGUID, @analogID, @readingValue, @recharge, @cyclePulses, @readingStart, @readingStop, @dp)
 END
 GO
