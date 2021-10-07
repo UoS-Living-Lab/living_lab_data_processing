@@ -154,7 +154,7 @@ def create_request(conn, reading, unitGUID):
 		SELECT @out AS the_output;
 		"""
 	params = (unitGUID, updateGUID, modeGUID, bool(request['success']), request['message'], datetime.strptime(request['now'], '%Y-%m-%dT%H:%M:%S%z'), details['name'], details['tz'], details['update_cycle'])
-	return execute_procedure(conn, sql, params)
+	execute_procedure(conn, sql, params)
 
 
 # Create new reading
@@ -165,7 +165,7 @@ def create_reading(conn, reading, unitGUID):	###
 	blocks = reading['blocks'][0]	# Blocks are returned as a list of dicts but are all contained in list enty 0, so get that
 	analogs = blocks['analogs']
 	
-	for i, data in enumerate(analogs):
+	for data in analogs:
 		mUnitGUID = str_to_uuid(create_measure_units(conn, data['units']))
 
 		sql = """ \
@@ -175,7 +175,9 @@ def create_reading(conn, reading, unitGUID):	###
 			"""
 		params = (unitGUID, mUnitGUID, int(data['aid']), data['name'], data['value'], int(data['recharge']), float(data['cycle_pulses']), float(data['start']), float(data['stop']), int(data['dp']))
 
-		return execute_procedure(conn, sql, params)
+		print(data['name'])
+
+		execute_procedure(conn, sql, params)
 
 
 # 
@@ -184,7 +186,7 @@ def create_output(conn, reading, unitGUID):	###
 	blocks = reading['blocks'][0]	# Blocks are returned as a list of dicts but are all contained in list enty 0, so get that
 	outputs = blocks['outputs']
 
-	for i, data in enumerate(outputs):
+	for data in outputs:
 		updateGUID = str_to_uuid(create_update(conn, data['last_update']))
 		modeGUID = str_to_uuid(create_mode(conn, data['mode']))
 		statusGUID = str_to_uuid(create_status(conn, data['status']))
@@ -195,7 +197,8 @@ def create_output(conn, reading, unitGUID):	###
 			SELECT @out AS the_output;
 			"""
 		params = (unitGUID, updateGUID, modeGUID, statusGUID, int(data['oid']), data['name'], data['high_state'], data['low_state'])
-		return execute_procedure(conn, sql, params)
+		
+		execute_procedure(conn, sql, params)
 
 
 # 
@@ -203,19 +206,23 @@ def create_alarm(conn, reading, unitGUID):	###
 	print('Create Alarm')
 	blocks = reading['blocks'][0]	# Blocks are returned as a list of dicts but are all contained in list enty 0, so get that
 	alarms = blocks['alarms']
-	for i, data in enumerate(alarms):
+	for data in alarms:
 		typeGUID = str_to_uuid(create_type(conn, data['type']))
 		statusGUID = str_to_uuid(create_status(conn, data['status']))
 		mUnitGUID = str_to_uuid(create_measure_units(conn, data['pulse_units']))
+
+		if type(data['last_change']) == str:
+			last_change = datetime.strptime(data['last_change'], '%Y-%m-%d %H:%M:%S')
+		else:
+			last_change = datetime.strptime('2001-01-01 01:01:01', '%Y-%m-%d %H:%M:%S')
 
 		sql = """ \
 			DECLARE @out UNIQUEIDENTIFIER;
 			EXEC [dbo].[PROC_CREATE_SEL_ALARM] @unitGUID = ?, @typeGUID= ?, @statusGUID = ?, @mUnitGUID = ?, @alarmID = ?, @alarmName = ?, @lastChange = ?, @healthyName = ?, @faultyName = ?, @pulseTotal = ?, @alarmGUID = @out OUTPUT;
 			SELECT @out AS the_output;
 			"""
-		params = (unitGUID, typeGUID, statusGUID, mUnitGUID, int(data['aid']), data['name'], datetime.strptime(data['last_change'], '%Y-%m-%d %H:%M:%S'), data['healthy_name'], data['faulty_name'], float(data['pulse_total']))
-		return execute_procedure(conn, sql, params)
-
+		params = (unitGUID, typeGUID, statusGUID, mUnitGUID, int(data['aid']), data['name'], last_change, data['healthy_name'], data['faulty_name'], float(data['pulse_total']))
+		execute_procedure(conn, sql, params)
 
 
 # Main body
@@ -237,7 +244,7 @@ if __name__ == '__main__':
 
 	for i, row in enumerate(readingsJSON):	
 		create_request(conn, row, unitGUIDs[i])		# Insertion order: 06
-		create_reading(conn, row, unitGUIDs[i])	# Insertion order: 10
+		create_reading(conn, row, unitGUIDs[i])		# Insertion order: 10
 		create_output(conn, row, unitGUIDs[i])		# Insertion order: 08
 		create_alarm(conn, row, unitGUIDs[i])		# Insertion order: 11
 
