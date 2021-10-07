@@ -129,11 +129,22 @@ def create_update(conn, date_time):
 	print('Create Datetime Update')
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
-		EXEC [dbo].[PROC_CREATE_UPDATE] @lastUpdate = ?, @updateGUID = @out OUTPUT;
+		EXEC [dbo].[PROC_CREATE_SEL_UPDATE] @lastUpdate = ?, @updateGUID = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
 	params = datetime.strptime(date_time, '%Y-%m-%d %H:%M:%S')
 	
+	return execute_procedure(conn, sql, params, True)
+
+
+def create_sensor(conn, sensorName):
+	print('Creating Sensor')
+	sql = """\
+		DECLARE @out UNIQUEIDENTIFIER;
+		EXEC [dbo].[PROC_CREATE_SEL_SENSOR] @sensorName = ?, @sensorGUID = @out OUTPUT;
+		SELECT @out AS the_output;
+		"""
+	params = sensorName
 	return execute_procedure(conn, sql, params, True)
 
 
@@ -167,13 +178,14 @@ def create_reading(conn, reading, unitGUID):	###
 	
 	for data in analogs:
 		mUnitGUID = str_to_uuid(create_measure_units(conn, data['units']))
+		sensorGUID = str_to_uuid(create_sensor(conn, data['name']))
 
 		sql = """ \
 			DECLARE @out UNIQUEIDENTIFIER;
-			EXEC [dbo].[PROC_CREATE_SEL_READING] @unitGUID = ?, @mUnitGUID= ?, @analogID = ?, @readingName = ?, @readingValue = ?, @recharge = ?, @cyclePulses = ?, @readingStart = ?, @readingStop = ?, @dp = ?, @readingGUID = @out OUTPUT;
+			EXEC [dbo].[PROC_CREATE_SEL_READING] @unitGUID = ?, @mUnitGUID= ?, @sensorGUID = ?, @analogID = ?, @readingValue = ?, @recharge = ?, @cyclePulses = ?, @readingStart = ?, @readingStop = ?, @dp = ?, @readingGUID = @out OUTPUT;
 			SELECT @out AS the_output;
 			"""
-		params = (unitGUID, mUnitGUID, int(data['aid']), data['name'], data['value'], int(data['recharge']), float(data['cycle_pulses']), float(data['start']), float(data['stop']), int(data['dp']))
+		params = (unitGUID, mUnitGUID, sensorGUID, int(data['aid']), data['value'], int(data['recharge']), float(data['cycle_pulses']), float(data['start']), float(data['stop']), int(data['dp']))
 
 		print(data['name'])
 
