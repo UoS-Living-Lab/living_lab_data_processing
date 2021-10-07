@@ -1,4 +1,5 @@
 .dlVenv
+.venv
 .vscode
 config/*.json
 config/*.txt
