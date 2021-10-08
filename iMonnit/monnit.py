@@ -22,8 +22,8 @@ from pandas import json_normalize
 import pyodbc
 from decouple import config
 
-from db import exec_procedure, execute_procedure_no_return, get_db, commit_db, close_db
-from functions import flask_to_to_uuid, split_dataframe_rows, remove_trailing_values, air_quality_processing, filter_network
+from living_lab_functions.db import execute_procedure, execute_procedure, get_db, commit_db, close_db
+from living_lab_functions.functions import flask_to_to_uuid, split_dataframe_rows, remove_trailing_values, air_quality_processing
 
 
 DB_URL = config('AZURE_DB_SERVER')
@@ -35,17 +35,11 @@ DB_PWD = config('AZURE_DB_PWD')
 # Formatted connection string for the SQL DB.
 SQL_CONN_STR = "DSN={0};Database={1};UID={2};PWD={3};".format(DB_URL, DB_BATABASE, DB_USR, DB_PWD)
 
-# Open file containing the sensor types to look for
-with open('./config/sensorTypes.txt') as f:
-    sensorTypes = f.read().splitlines()
 
-# Delimeters used in the recieved sensor JSON
-with open('./config/delimeters.txt') as f:
-    delimeters = f.read().splitlines()
-
-# The columns that need to be split to remove concatonated values
-with open('./config/sensorColumns.txt') as f:
-    sensorColumns = f.read().splitlines()
+# Load lists from env variables
+SENSOR_TYPES = config('MONNIT_SENSOR_TYPES', cast=lambda v: [s.strip() for s in v.split(',')])
+SENSOR_COLUMNS = config('MONNIT_SENSOR_COLUMNS', cast=lambda v: [s.strip() for s in v.split(',')])
+DELIMETERS = config('MONNIT_DELIMETERS', cast=lambda v: [s.strip() for s in v.split(',')])
 
 
 # Flask web server
@@ -69,22 +63,18 @@ def webhook():
 	# Store the recieved JSON file from the request 
 	jsonLoad = request.json
 	
-	# Load gateway and sensor message data form JSON into separate variables
-	gatewayMessages = jsonLoad['gatewayMessage']
+	# Reveived JSON contains two JSON objects. Sensor and Gateway messages 
+	# Only sensor messages are needed
 	sensorMessages = jsonLoad['sensorMessages']
 	# Convert the JSONs into pandas dataframes
-	gatewayMessages = json_normalize(gatewayMessages)
 	sensorMessages = json_normalize(sensorMessages)
 
 	# Remove the trailing values present in the rawData field of some sensors
-	sensorMessages = remove_trailing_values(sensorMessages, sensorTypes)
+	sensorMessages = remove_trailing_values(sensorMessages, SENSOR_TYPES)
 	# Process any sensor messages for Air Quality
 	sensorMessages = air_quality_processing(sensorMessages)
-	# Filter out messages from networks not related to MOVE
-	#sensorMessages = filterNetwork(sensorMessages, str(58947))		# Not needed Living Lab only uses one network
-
 	# Split the dataframe to move concatonated values to new rows
-	splitDf = split_dataframe_rows(sensorMessages, sensorColumns, delimeters)
+	splitDf = split_dataframe_rows(sensorMessages, SENSOR_COLUMNS, DELIMETERS)
 
 
 	# Use the Pandas 'loc' function to find and replace pending changes in the dataset
@@ -92,15 +82,12 @@ def webhook():
 	splitDf.loc[(splitDf.pendingChange == 'True'), 'pendingChange'] = 1
 
 
-	# CONNECT TO DB HERE
+	# Connect to DB and get an app context with teh connector
 	conn = get_db(SQL_CONN_STR)
 
 
-	# ADDITIONAL PROCESSING HERE
 	for i, sensorData in splitDf.iterrows():
 		print("Processing sensor message " + str(i) + ".")
-
-		##############
 
 		## CREATE NETWORK ##
 		# Prepare SQL statement to call stored procedure to create a network entry using 
@@ -112,7 +99,7 @@ def webhook():
 		# Execute the stored procedure to create a network if it doesn't exist, 
 		# and ignore input if exists
 		print('Step 1/10: Creating network entry')
-		execute_procedure_no_return(conn, sql, params)
+		execute_procedure(conn, sql, params)
 		print('Network entry created')
 
 
@@ -126,7 +113,7 @@ def webhook():
 		# Execute the stored procedure to create an application if it doesn't exist, 
 		# and ignore input if exists
 		print('Step 2/10: Creating application entry')
-		execute_procedure_no_return(conn, sql, params)
+		execute_procedure(conn, sql, params)
 		print('Network application created')
 
 
@@ -148,7 +135,7 @@ def webhook():
 		# create a new sensor in the DB, or get an existing one.
 		print('Step 3/10: Creating or getting sensor')
 		# Execute the procedure and return sensorID and convert trimmed string into a GUID (UUID)
-		sensorData['sensorID'] = flask_to_to_uuid(exec_procedure(conn, sql, params))
+		sensorData['sensorID'] = flask_to_to_uuid(execute_procedure(conn, sql, params, True))
 		print(sensorData['sensorID'])
 		
 
@@ -166,7 +153,7 @@ def webhook():
 		# Execute the procedure using the prepared SQL & parameters to 
 		# create a new sensor in the DB, or get an existing one.
 		print('Step 4/10: Creating or getting data type ID')
-		sensorData['dataTypeID'] = flask_to_to_uuid(exec_procedure(conn, sql, params))
+		sensorData['dataTypeID'] = flask_to_to_uuid(execute_procedure(conn, sql, params, True))
 		print(sensorData['dataTypeID'])
 
 
@@ -183,7 +170,7 @@ def webhook():
 		# Execute the procedure using the prepared SQL & parameters to 
 		# create a new plot label in the DB, or get an existing one.
 		print('Step 5/10: Creating or getting plot label ID')
-		sensorData['plotLabelID'] = flask_to_to_uuid(exec_procedure(conn, sql, params)) ## Problem here?
+		sensorData['plotLabelID'] = flask_to_to_uuid(execute_procedure(conn, sql, params, True)) ## Problem here?
 		
 
 		## GET OR CREATE READING ##
@@ -201,7 +188,7 @@ def webhook():
 		# Execute the procedure using the prepared SQL & parameters to 
 		# create a new reading in the DB, and return the genreated ID.
 		print('Step 6/10: Creating reading, and getting ID')
-		sensorData['readingID'] = flask_to_to_uuid(exec_procedure(conn, sql, params))
+		sensorData['readingID'] = flask_to_to_uuid(execute_procedure(conn, sql, params, True))
 		
 
 		## GET OR CREATE SIGNAL STATUS ##
@@ -212,10 +199,9 @@ def webhook():
 		# Bind the parameters that are required for the procedure to function
 		params = (sensorData['readingID'], sensorData['dataMessageGUID'], sensorData['signalStrength'])
 		
-		# Execute the procedure using the prepared SQL & parameters to 
-		# create a new signal status in the DB.
+		# Execute the procedure using the prepared SQL & parameters to create a new signal status in the DB.
 		print('Step 7/10: Creating signal atatus')
-		execute_procedure_no_return(conn, sql, params)
+		execute_procedure(conn, sql, params)
 		
 
 		## GET OR CREATE BATTERY STATUS ##
@@ -228,7 +214,7 @@ def webhook():
 		# Execute the procedure using the prepared SQL & parameters to 
 		# create a new battery status in the DB.
 		print('Step 8/10: Creating battery status')
-		execute_procedure_no_return(conn, sql, params)
+		execute_procedure(conn, sql, params)
 		
 
 		## GET OR CREATE PENDING CHANGES ##
@@ -242,7 +228,7 @@ def webhook():
 		# Execute the procedure using the prepared SQL & parameters to 
 		# create a new pending change in the DB.
 		print('Step 9/10: Creating pending change')
-		execute_procedure_no_return(conn, sql, params)
+		execute_procedure(conn, sql, params)
 		
 
 		## GET OR CREATE SENSOR VOLTAGE ##
@@ -256,7 +242,7 @@ def webhook():
 		# Execute the procedure using the prepared SQL & parameters to 
 		# create a new voltage entry in the DB.
 		print('Step 10/10: Creating voltage reading')
-		execute_procedure_no_return(conn, sql, params)
+		execute_procedure(conn, sql, params)
 
 	# Commit data and close open database connection
 	commit_db()
@@ -266,6 +252,7 @@ def webhook():
 	status_code = Response(status=200)
 	return status_code
 
+
 if __name__ == '__main__':
 	WSGIRequestHandler.protocol_version = "HTTP/1.1"
-	app.run(host= '0.0.0.0', port = '80')
+	app.run(host = '0.0.0.0', port = '80')
