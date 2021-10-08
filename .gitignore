@@ -5,7 +5,6 @@
 .env
 
 # Sensor processing configs and testing files
-iMonnit/config/*.txt
 TTN/data
 TTN/jupyter/*.png
 SEL/__pycache__
