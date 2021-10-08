@@ -1,17 +1,15 @@
+# Virtual envs, env variables, and IDE dependencies
 .dlVenv
 .venv
 .vscode
-config/*.json
-config/*.txt
-data/json/novus/*.json
-data/json/ttn/*.json
-data/json/*.json
-data/csv/*
-data/jsonOld
 .env
+
+# Sensor processing configs and testing files
+iMonnit/config/*.txt
+TTN/data
+TTN/jupyter/*.png
 SEL/__pycache__
-monnit/config/*.txt
-/ttn/data/json/*
-/ttn/data/csv/*
-/ttn/jupyter/*.png
-/sel/data
+SEL/data
+SEL/jupyter
+SEL/documentation
+NOVUS/data
