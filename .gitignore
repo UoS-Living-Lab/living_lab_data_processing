@@ -6,8 +6,8 @@
 
 # Sensor processing configs and testing files
 TTN/data
-TTN/jupyter/*.png
+TTN/jupyter
 SEL/__pycache__
 SEL/data
 SEL/jupyter
-NOVUS/data
+NOVUS/jupyter
