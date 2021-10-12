@@ -22,7 +22,7 @@ from pandas import json_normalize
 import pyodbc
 from decouple import config
 
-from living_lab_functions.db import execute_procedure, execute_procedure, get_db, commit_db, close_db
+from living_lab_functions.db import execute_procedure, get_db, commit_db, close_db
 from living_lab_functions.functions import flask_to_to_uuid, split_dataframe_rows, remove_trailing_values, air_quality_processing
 
 
