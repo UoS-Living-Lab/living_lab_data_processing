@@ -11,15 +11,12 @@ __version__ = "1.0"
 
 
 # Import libraries
-import sys
-from flask import Flask, request, abort, current_app, g
-from flask.cli import with_appcontext
+from flask import Flask, request
 from flask.wrappers import Response
 from flask_basicauth import BasicAuth
 from werkzeug.serving import WSGIRequestHandler
 import pandas as pd
 from pandas import json_normalize
-import pyodbc
 from decouple import config
 
 from living_lab_functions.db import execute_procedure, get_db, commit_db, close_db
@@ -57,7 +54,7 @@ basic_auth = BasicAuth(app)
 @app.route('/', methods=['POST'])
 @basic_auth.required
 # Primary function
-def webhook():
+def monnit_webhook():
 	print('Request Authenticated')
 
 	# Store the recieved JSON file from the request 
