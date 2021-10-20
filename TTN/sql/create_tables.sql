@@ -1,18 +1,18 @@
 CREATE TABLE dbresprod.dbo.TTN_APPLICATIONS(
 	application_guid UNIQUEIDENTIFIER NOT NULL,
-	application_name NVARCHAR(20) NOT NULL,
+	application_name NVARCHAR(35) NOT NULL,
 	CONSTRAINT PK_TTN_APPLICATIONS PRIMARY KEY (application_guid)
 );
 
 CREATE TABLE dbresprod.dbo.TTN_WARNINGS(
 	warning_guid UNIQUEIDENTIFIER NOT NULL,
-	decoded_payload_warnings NVARCHAR(20) NOT NULL,
+	decoded_payload_warnings NVARCHAR(MAX) NULL,
 	CONSTRAINT PK_TTN_WARNINGS PRIMARY KEY (warning_guid)
 );
 
 CREATE TABLE dbresprod.dbo.TTN_GATEWAYS(
 	gateway_guid UNIQUEIDENTIFIER NOT NULL,
-	gateway_name NVARCHAR(20) NOT NULL,
+	gateway_name NVARCHAR(30) NOT NULL,
 	CONSTRAINT PK_TTN_GATEWAYS PRIMARY KEY (gateway_guid)
 );
 
@@ -20,15 +20,15 @@ CREATE TABLE dbresprod.dbo.TTN_LOCATIONS(
 	location_guid UNIQUEIDENTIFIER NOT NULL, 
 	latitude FLOAT NOT NULL,
 	longitude FLOAT NOT NULL,
-	source NVARCHAR(20) NOT NULL,
+	source NVARCHAR(100) NULL,
 	CONSTRAINT PK_TTN_LOCATIONS PRIMARY KEY (location_guid)
 );
 
 CREATE TABLE dbresprod.dbo.TTN_SENSORS(
 	sensor_guid UNIQUEIDENTIFIER NOT NULL,
-	sensor_name NVARCHAR(20) NULL,
-	snesor_type NVARCHAR(20) NULL,
-	sensor_location NVARCHAR(20) NULL,
+	sensor_name NVARCHAR(30) NULL,
+	snesor_type NVARCHAR(15) NULL,
+	sensor_location NVARCHAR(30) NULL,
 	measurement_unit NVARCHAR(5) NULL,
 	CONSTRAINT PK_TTN_SENSORS PRIMARY KEY (sensor_guid)
 );
@@ -36,10 +36,11 @@ CREATE TABLE dbresprod.dbo.TTN_SENSORS(
 CREATE TABLE dbresprod.dbo.TTN_DEVICES(
 	device_guid UNIQUEIDENTIFIER NOT NULL,
 	application_guid UNIQUEIDENTIFIER NOT NULL,
-	device_name NVARCHAR(20) NOT NULL,
-	dev_eui NVARCHAR(MAX) NOT NULL,
-	join_eui NVARCHAR(MAX) NOT NULL,
-	dev_addr NVARCHAR(MAX) NOT NULL,
+	device_name NVARCHAR(100) NOT NULL,
+	device_location NVARCHAR(30) NULL,
+	dev_eui NVARCHAR(30) NOT NULL,
+	join_eui NVARCHAR(30) NOT NULL,
+	dev_addr NVARCHAR(15) NOT NULL,
 	CONSTRAINT PK_TTN_DEVICES PRIMARY KEY (device_guid),
 	CONSTRAINT FK_TTN_DEVICES_TTN_APPLICATIONS FOREIGN KEY (application_guid)
 		REFERENCES dbresprod.dbo.TTN_APPLICATIONS (application_guid)
@@ -51,11 +52,11 @@ CREATE TABLE dbresprod.dbo.TTN_UPLINKS(
 	uplink_guid UNIQUEIDENTIFIER NOT NULL,
 	device_guid UNIQUEIDENTIFIER NOT NULL,
 	warning_guid UNIQUEIDENTIFIER NOT NULL,
-	session_key_id NVARCHAR(20) NOT NULL,
+	session_key_id NVARCHAR(40) NOT NULL,
 	f_port INT NOT NULL,
 	f_cnt INT NOT NULL,
-	frm_payload NVARCHAR(20) NOT NULL,
-	raw_bytes NVARCHAR(20) NOT NULL,
+	frm_payload NVARCHAR(50) NOT NULL,
+	raw_bytes NVARCHAR(50) NOT NULL,
 	consumed_airtime FLOAT NOT NULL,
 	CONSTRAINT PK_TTN_UPLINKS PRIMARY KEY (uplink_guid),
 	CONSTRAINT FK_TTN_UPLINKS_TTN_DEVICES FOREIGN KEY (device_guid)
@@ -97,13 +98,13 @@ CREATE TABLE dbresprod.dbo.TTN_RX(
 	rssi INT NOT NULL,
 	channel_rssi INT NOT NULL,
 	snr FLOAT NOT NULL,
-	message_id NVARCHAR(20) NULL,
+	message_id NVARCHAR(30) NULL,
 	forwarder_net_id INT NULL, 
-	forwarder_tenant_id NVARCHAR(20) NULL,
-	forwarder_cluster_id NVARCHAR(20) NULL,
+	forwarder_tenant_id NVARCHAR(8) NULL,
+	forwarder_cluster_id NVARCHAR(15) NULL,
 	home_network_net_id INT NULL,
-	home_network_tenant_id NVARCHAR(20) NULL,
-	home_network_cluster_id NVARCHAR(20) NULL,
+	home_network_tenant_id NVARCHAR(8) NULL,
+	home_network_cluster_id NVARCHAR(12) NULL,
 	CONSTRAINT PK_TTN_RX PRIMARY KEY (rx_guid),
 	CONSTRAINT FK_TTN_RX_TTN_GATEWAY FOREIGN KEY (gateway_guid)
 		REFERENCES dbresprod.dbo.TTN_GATEWAYS (gateway_guid)
@@ -123,9 +124,9 @@ CREATE TABLE dbresprod.dbo.TTN_HOPS(
 	hop_guid UNIQUEIDENTIFIER NOT NULL,
 	gateway_guid UNIQUEIDENTIFIER NOT NULL,
 	rx_guid UNIQUEIDENTIFIER NOT NULL,
-	sender_address NVARCHAR(20) NOT NULL,
-	receiver_name NVARCHAR(20) NOT NULL,
-	receiver_agent NVARCHAR(20) NOT NULL,
+	sender_address NVARCHAR(15) NOT NULL,
+	receiver_name NVARCHAR(40) NOT NULL,
+	receiver_agent NVARCHAR(40) NOT NULL,
 	CONSTRAINT PK_TTN_HOPS PRIMARY KEY (hop_guid),
 	CONSTRAINT FK_TTN_HOPS_TTN_GATEWAYS FOREIGN KEY (gateway_guid)
 		REFERENCES dbresprod.dbo.TTN_GATEWAYS (gateway_guid)
@@ -151,7 +152,7 @@ CREATE TABLE dbresprod.dbo.TTN_CORRELATION_IDS(
 CREATE TABLE dbresprod.dbo.TTN_UPLINK_TOKENS(
 	rx_guid UNIQUEIDENTIFIER NOT NULL,
 	gateway_guid UNIQUEIDENTIFIER NOT NULL,
-	uplink_token NVARCHAR(20) NOT NULL,
+	uplink_token NVARCHAR(MAX) NOT NULL,
 	CONSTRAINT FK_TTN_UPLINK_TOKENS_TTN_RX FOREIGN KEY (rx_guid)
 		REFERENCES dbresprod.dbo.TTN_UPLINK_TOKENS
 		ON DELETE CASCADE
@@ -165,7 +166,7 @@ CREATE TABLE dbresprod.dbo.TTN_UPLINK_TOKENS(
 CREATE TABLE dbresprod.dbo.TTN_READINGS(
 	uplink_guid UNIQUEIDENTIFIER NOT NULL,
 	sensor_guid UNIQUEIDENTIFIER NOT NULL,
-	sensor_value FLOAT NOT NULL,
+	sensor_value NVARCHAR(MAX) NOT NULL,
 	CONSTRAINT FK_TTN_READINGS_TTN_UPLINKS FOREIGN KEY (uplink_guid)
 		REFERENCES dbresprod.dbo.TTN_UPLINKS (uplink_guid)
 		ON DELETE CASCADE
@@ -182,7 +183,7 @@ CREATE TABLE dbresprod.dbo.TTN_UPLINK_SETTINGS(
 	bandwidth INT NOT NULL,
 	spreading_factor INT NOT NULL,
 	data_rate_index INT NOT NULL,
-	coding_rate NVARCHAR(20) NOT NULL,
+	coding_rate NVARCHAR(5) NOT NULL,
 	frequency INT NOT NULL,
 	setting_tiemstamp INT NOT NULL,
 	CONSTRAINT PK_TTN_UPLINK_SETTINGS PRIMARY KEY (uplink_setting_guid),
