@@ -51,7 +51,7 @@ GO
 
 
 /* Check for a gateway and return the GUID if it exists, or create a new entry if none exists. */
-CREATE PROCEDURE PROC_GET_OR_CREATE_TTN_GATEWAY (@gateway_name AS NVARCHAR(30), @gateway_guid AS UNIQUEIDENTIFIER OUTPUT)
+CREATE PROCEDURE PROC_GET_OR_CREATE_TTN_GATEWAY (@location_guid AS UNIQUEIDENTIFIER, @gateway_name AS NVARCHAR(30), @gateway_guid AS UNIQUEIDENTIFIER OUTPUT)
 AS
 BEGIN
 	SET NOCOUNT ON;
@@ -70,7 +70,7 @@ BEGIN
 		BEGIN
 			SET @gateway_guid = NULL
 			SET @gateway_guid = NEWID()
-			INSERT INTO dbresprod.dbo.TTN_GATEWAYS (gateway_guid, gateway_name) VALUES (@gateway_guid, @gateway_name)
+			INSERT INTO dbresprod.dbo.TTN_GATEWAYS (gateway_guid, location_guid, gateway_name) VALUES (@gateway_guid, @location_guid, @gateway_name)
 		END
 END
 GO
@@ -233,12 +233,12 @@ GO
 
 
 /* Create a new uplink setting entry, and return the GUID. */
-CREATE PROCEDURE PROC_CREATE_TTN_UPLINK_SETTING (@plink_guid AS UNIQUEIDENTIFIER, @bandwidth AS INT, @spreading_factor AS INT, @data_rate_index AS INT, @coding_rate AS NVARCHAR(5), @frequency AS INT, @setting_timestamp AS INT, @uplink_setting_guid AS UNIQUEIDENTIFIER OUTPUT)
+CREATE PROCEDURE PROC_CREATE_TTN_UPLINK_SETTING (@uplink_guid AS UNIQUEIDENTIFIER, @bandwidth AS INT, @spreading_factor AS INT, @data_rate_index AS INT, @coding_rate AS NVARCHAR(5), @frequency AS INT, @setting_timestamp AS INT, @uplink_setting_guid AS UNIQUEIDENTIFIER OUTPUT)
 AS
 BEGIN
 	SET NOCOUNT ON;
 	SET @uplink_setting_guid = NULL
 	SET @uplink_setting_guid = NEWID()
-	INSERT INTO dbresprod.dbo.TTN_UPLINK_SETTINGS (uplink_setting_guid, plink_guid, bandwidth, spreading_factor, data_rate_index, coding_rate, frequency, setting_timestamp) VALUES (@uplink_setting_guid, @plink_guid, @bandwidth, @spreading_factor, @data_rate_index, @coding_rate, @frequency, @setting_timestamp)
+	INSERT INTO dbresprod.dbo.TTN_UPLINK_SETTINGS (uplink_setting_guid, uplink_guid, bandwidth, spreading_factor, data_rate_index, coding_rate, frequency, setting_timestamp) VALUES (@uplink_setting_guid, @uplink_guid, @bandwidth, @spreading_factor, @data_rate_index, @coding_rate, @frequency, @setting_timestamp)
 END
 GO
