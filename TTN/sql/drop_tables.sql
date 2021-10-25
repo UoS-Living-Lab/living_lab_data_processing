@@ -1,0 +1,42 @@
+/* Drop existing TTN tables from the DB */ 
+DROP TABLE dbresprod.dbo.TTN_UPLINK_SETTINGS
+GO
+
+DROP TABLE dbresprod.dbo.TTN_READINGS
+GO
+
+DROP TABLE dbresprod.dbo.TTN_UPLINK_TOKENS
+GO
+
+DROP TABLE dbresprod.dbo.TTN_CORRELATION_IDS
+GO
+
+DROP TABLE dbresprod.dbo.TTN_HOPS
+GO
+
+DROP TABLE dbresprod.dbo.TTN_DATETIMES
+GO
+
+DROP TABLE dbresprod.dbo.TTN_RX
+GO
+
+DROP TABLE dbresprod.dbo.TTN_UPLINKS
+GO
+
+DROP TABLE dbresprod.dbo.TTN_DEVICES
+GO
+
+DROP TABLE dbresprod.dbo.TTN_SENSORS
+GO
+
+DROP TABLE dbresprod.dbo.TTN_GATEWAYS
+GO
+
+DROP TABLE dbresprod.dbo.TTN_LOCATIONS
+GO
+
+DROP TABLE dbresprod.dbo.TTN_WARNINGS
+GO
+
+DROP TABLE dbresprod.dbo.TTN_APPLICATIONS
+GO
