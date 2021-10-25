@@ -11,10 +11,10 @@ GO
 DROP TABLE dbresprod.dbo.TTN_CORRELATION_IDS
 GO
 
-DROP TABLE dbresprod.dbo.TTN_HOPS
+DROP TABLE dbresprod.dbo.TTN_DATETIMES
 GO
 
-DROP TABLE dbresprod.dbo.TTN_DATETIMES
+DROP TABLE dbresprod.dbo.TTN_HOPS
 GO
 
 DROP TABLE dbresprod.dbo.TTN_RX
