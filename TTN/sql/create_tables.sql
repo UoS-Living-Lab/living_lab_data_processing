@@ -6,7 +6,7 @@ CREATE TABLE dbresprod.dbo.TTN_APPLICATIONS(
 
 CREATE TABLE dbresprod.dbo.TTN_WARNINGS(
 	warning_guid UNIQUEIDENTIFIER NOT NULL,
-	decoded_payload_warnings NVARCHAR(MAX) NULL,
+	decoded_payload_warning NVARCHAR(MAX) NULL,
 	CONSTRAINT PK_TTN_WARNINGS PRIMARY KEY (warning_guid)
 );
 
@@ -32,7 +32,7 @@ CREATE TABLE dbresprod.dbo.TTN_GATEWAYS(
 CREATE TABLE dbresprod.dbo.TTN_SENSORS(
 	sensor_guid UNIQUEIDENTIFIER NOT NULL,
 	sensor_name NVARCHAR(30) NULL,
-	snesor_type NVARCHAR(15) NULL,
+	sensor_type NVARCHAR(15) NULL,
 	sensor_location NVARCHAR(30) NULL,
 	measurement_unit NVARCHAR(5) NULL,
 	CONSTRAINT PK_TTN_SENSORS PRIMARY KEY (sensor_guid)
@@ -141,7 +141,7 @@ CREATE TABLE dbresprod.dbo.TTN_DATETIMES(
 CREATE TABLE dbresprod.dbo.TTN_CORRELATION_IDS(
 	correlation_guid UNIQUEIDENTIFIER NOT NULL,
 	rx_guid UNIQUEIDENTIFIER NOT NULL,
-	correlation_ids NVARCHAR(MAX) NOT NULL,
+	correlation_id NVARCHAR(MAX) NOT NULL,
 	CONSTRAINT PK_TTN_CORRELATION_IDS PRIMARY KEY (correlation_guid),
 	CONSTRAINT FK_TTN_CORRELATION_IDS_TTN_RX FOREIGN KEY (rx_guid)
 		REFERENCES dbresprod.dbo.TTN_RX (rx_guid)
@@ -185,7 +185,7 @@ CREATE TABLE dbresprod.dbo.TTN_UPLINK_SETTINGS(
 	data_rate_index INT NOT NULL,
 	coding_rate NVARCHAR(5) NOT NULL,
 	frequency INT NOT NULL,
-	setting_tiemstamp INT NOT NULL,
+	setting_timestamp INT NOT NULL,
 	CONSTRAINT PK_TTN_UPLINK_SETTINGS PRIMARY KEY (uplink_setting_guid),
 	CONSTRAINT FK_TTN_UPLINK_SETTINGS_TTN_UPLINKS FOREIGN KEY (uplink_guid)
 		REFERENCES dbresprod.dbo.TTN_UPLINKS (uplink_guid)
