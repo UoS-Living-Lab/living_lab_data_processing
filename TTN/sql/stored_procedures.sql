@@ -129,7 +129,7 @@ GO
 
 
 /* Check for a device and return the GUID if it exists, or create a new entry if none exists. */
-CREATE PROCEDURE PROC_GET_OR_CREATE_TTN_DEVICE (@application_guid AS UNIQUEIDENTIFIER, @device_name AS NVARCHAR(100), @sensor_location AS NVARCHAR(30), @dev_eui AS NVARCHAR(30), @join_eui AS NVARCHAR(30), @dev_addr AS NVARCHAR(15), @device_guid AS UNIQUEIDENTIFIER OUTPUT)
+CREATE PROCEDURE PROC_GET_OR_CREATE_TTN_DEVICE (@application_guid AS UNIQUEIDENTIFIER, @device_name AS NVARCHAR(100), @device_location AS NVARCHAR(30), @dev_eui AS NVARCHAR(30), @join_eui AS NVARCHAR(30), @dev_addr AS NVARCHAR(15), @device_guid AS UNIQUEIDENTIFIER OUTPUT)
 AS
 BEGIN
 	SET NOCOUNT ON;
@@ -148,7 +148,7 @@ BEGIN
 		BEGIN
 			SET @device_guid = NULL
 			SET @device_guid = NEWID()
-			INSERT INTO dbresprod.dbo.TTN_DEVICES (device_guid, application_guid, device_name, dev_eui, join_eui, dev_addr) VALUES (@device_guid, @application_guid, @device_name, @dev_eui, @join_eui, @dev_addr)
+			INSERT INTO dbresprod.dbo.TTN_DEVICES (device_guid, application_guid, device_name, device_location, dev_eui, join_eui, dev_addr) VALUES (@device_guid, @application_guid, @device_name, @device_location, @dev_eui, @join_eui, @dev_addr)
 		END
 END
 GO
