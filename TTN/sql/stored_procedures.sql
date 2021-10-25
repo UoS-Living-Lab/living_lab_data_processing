@@ -122,7 +122,7 @@ BEGIN
 		BEGIN
 			SET @sensor_guid = NULL
 			SET @sensor_guid = NEWID()
-			INSERT INTO dbresprod.dbo.TTN_SENSORS (sensor_guid, sensor_name, sensor_type, sensor_location, measurement_unit, sensor_guid) VALUES (@sensor_guid, @sensor_name, @sensor_type, @sensor_location, @measurement_unit, @sensor_guid)
+			INSERT INTO dbresprod.dbo.TTN_SENSORS (sensor_guid, sensor_name, sensor_type, sensor_location, measurement_unit) VALUES (@sensor_guid, @sensor_name, @sensor_type, @sensor_location, @measurement_unit)
 		END
 END
 GO
@@ -177,13 +177,13 @@ GO
 
 
 /* Create a new RX entry, and return the GUID. */
-CREATE PROCEDURE PROC_CREATE_TTN_RX (@gateway_guid AS UNIQUEIDENTIFIER, @uplink_guid AS UNIQUEIDENTIFIER, @location_guid AS UNIQUEIDENTIFIER, @rx_time AS DATETIME, @rx_timestamp AS INT, @rssi AS INT, @channel_rssi AS INT, @snr AS FLOAT, @message_id AS NVARCHAR(30), @forwarder_net_id AS INT, @forwarder_tenant_id AS NVARCHAR(8), @forwarder_cluster_id AS NVARCHAR(15), @home_network_net_id AS INT, @home_network_tenant_id AS NVARCHAR(8), @home_network_cluster_id AS NVARCHAR(12), @rx_guid AS UNIQUEIDENTIFIER OUTPUT)
+CREATE PROCEDURE PROC_CREATE_TTN_RX (@gateway_guid AS UNIQUEIDENTIFIER, @uplink_guid AS UNIQUEIDENTIFIER, @rx_time AS DATETIME, @rx_timestamp AS INT, @rssi AS INT, @channel_rssi AS INT, @snr AS FLOAT, @message_id AS NVARCHAR(30), @forwarder_net_id AS INT, @forwarder_tenant_id AS NVARCHAR(8), @forwarder_cluster_id AS NVARCHAR(15), @home_network_net_id AS INT, @home_network_tenant_id AS NVARCHAR(8), @home_network_cluster_id AS NVARCHAR(12), @rx_guid AS UNIQUEIDENTIFIER OUTPUT)
 AS
 BEGIN
 	SET NOCOUNT ON;
 	SET @rx_guid = NULL
 	SET @rx_guid = NEWID()
-	INSERT INTO dbresprod.dbo.TTN_RX (rx_guid, gateway_guid, uplink_guid, location_guid, rx_time, rx_timestamp, rssi, channel_rssi, snr, message_id, forwarder_net_id, forwarder_tenant_id, forwarder_cluster_id, home_network_net_id, home_network_tenant_id, home_network_cluster_id) VALUES (@rx_guid, @gateway_guid, @uplink_guid, @location_guid, @rx_time, @rx_timestamp, @rssi, @channel_rssi, @snr, @message_id, @forwarder_net_id, @forwarder_tenant_id, @forwarder_cluster_id, @home_network_net_id, @home_network_tenant_id, @home_network_cluster_id)
+	INSERT INTO dbresprod.dbo.TTN_RX (rx_guid, gateway_guid, uplink_guid, rx_time, rx_timestamp, rssi, channel_rssi, snr, message_id, forwarder_net_id, forwarder_tenant_id, forwarder_cluster_id, home_network_net_id, home_network_tenant_id, home_network_cluster_id) VALUES (@rx_guid, @gateway_guid, @uplink_guid, @rx_time, @rx_timestamp, @rssi, @channel_rssi, @snr, @message_id, @forwarder_net_id, @forwarder_tenant_id, @forwarder_cluster_id, @home_network_net_id, @home_network_tenant_id, @home_network_cluster_id)
 END
 GO
 
