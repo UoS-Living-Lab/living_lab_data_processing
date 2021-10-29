@@ -200,7 +200,7 @@ def create_uplink_setting(conn, uplink_guid, uplink_settings):
 	return execute_procedure(conn, sql, params, True)
 
 
-@app.route('/imonnit', methods=['POST'])
+@app.route('/uplink/messages', methods=['POST'])
 @basic_auth.required
 def ttn_webhook():
 	print('Request Authenticated')
