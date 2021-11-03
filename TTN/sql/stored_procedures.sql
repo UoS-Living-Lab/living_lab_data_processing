@@ -189,13 +189,13 @@ GO
 
 
 /* Create a new HOP entry, and return GUID. */
-CREATE PROCEDURE PROC_CREATE_TTN_HOP (@gateway_guid AS UNIQUEIDENTIFIER, @rx_guid AS UNIQUEIDENTIFIER, @sender_address AS NVARCHAR(15), @receiver_name AS NVARCHAR(40), @receiver_agent AS NVARCHAR(40), @hop_guid AS UNIQUEIDENTIFIER OUTPUT)
+CREATE PROCEDURE PROC_CREATE_TTN_HOP (@rx_guid AS UNIQUEIDENTIFIER, @sender_address AS NVARCHAR(15), @receiver_name AS NVARCHAR(40), @receiver_agent AS NVARCHAR(40), @hop_guid AS UNIQUEIDENTIFIER OUTPUT)
 AS
 BEGIN
 	SET NOCOUNT ON;
 	SET @hop_guid = NULL
 	SET @hop_guid = NEWID()
-	INSERT INTO dbresprod.dbo.TTN_HOPS (hop_guid, gateway_guid, rx_guid, sender_address, receiver_name, receiver_agent) VALUES (@hop_guid, @gateway_guid, @rx_guid, @sender_address, @receiver_name, @receiver_agent)
+	INSERT INTO dbresprod.dbo.TTN_HOPS (hop_guid, rx_guid, sender_address, receiver_name, receiver_agent) VALUES (@hop_guid, @rx_guid, @sender_address, @receiver_name, @receiver_agent)
 END
 GO
 
