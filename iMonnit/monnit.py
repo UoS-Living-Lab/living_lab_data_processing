@@ -20,7 +20,7 @@ from pandas import json_normalize
 from decouple import config
 
 from living_lab_functions.db import execute_procedure, get_db, commit_db, close_db
-from living_lab_functions.functions import flask_to_to_uuid, split_dataframe_rows, remove_trailing_values, air_quality_processing
+from living_lab_functions.functions import flask_to_uuid, split_dataframe_rows, remove_trailing_values, air_quality_processing
 
 
 DB_URL = config('AZURE_DB_SERVER')
@@ -132,7 +132,7 @@ def monnit_webhook():
 		# create a new sensor in the DB, or get an existing one.
 		print('Step 3/10: Creating or getting sensor')
 		# Execute the procedure and return sensorID and convert trimmed string into a GUID (UUID)
-		sensorData['sensorID'] = flask_to_to_uuid(execute_procedure(conn, sql, params, True))
+		sensorData['sensorID'] = flask_to_uuid(execute_procedure(conn, sql, params, True))
 		print(sensorData['sensorID'])
 		
 
@@ -150,7 +150,7 @@ def monnit_webhook():
 		# Execute the procedure using the prepared SQL & parameters to 
 		# create a new sensor in the DB, or get an existing one.
 		print('Step 4/10: Creating or getting data type ID')
-		sensorData['dataTypeID'] = flask_to_to_uuid(execute_procedure(conn, sql, params, True))
+		sensorData['dataTypeID'] = flask_to_uuid(execute_procedure(conn, sql, params, True))
 		print(sensorData['dataTypeID'])
 
 
@@ -167,7 +167,7 @@ def monnit_webhook():
 		# Execute the procedure using the prepared SQL & parameters to 
 		# create a new plot label in the DB, or get an existing one.
 		print('Step 5/10: Creating or getting plot label ID')
-		sensorData['plotLabelID'] = flask_to_to_uuid(execute_procedure(conn, sql, params, True)) ## Problem here?
+		sensorData['plotLabelID'] = flask_to_uuid(execute_procedure(conn, sql, params, True)) ## Problem here?
 		
 
 		## GET OR CREATE READING ##
@@ -185,7 +185,7 @@ def monnit_webhook():
 		# Execute the procedure using the prepared SQL & parameters to 
 		# create a new reading in the DB, and return the genreated ID.
 		print('Step 6/10: Creating reading, and getting ID')
-		sensorData['readingID'] = flask_to_to_uuid(execute_procedure(conn, sql, params, True))
+		sensorData['readingID'] = flask_to_uuid(execute_procedure(conn, sql, params, True))
 		
 
 		## GET OR CREATE SIGNAL STATUS ##

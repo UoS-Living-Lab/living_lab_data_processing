@@ -26,7 +26,7 @@ def str_to_uuid(struct):
 
 
 # Convert returned strings from the DB into GUID
-def flask_to_to_uuid(struct):
+def flask_to_uuid(struct):
 	# Remove the leading and trailing characters from the ID
 	struct = struct.replace("[('", "")
 	struct = struct.replace("', )]", "")
