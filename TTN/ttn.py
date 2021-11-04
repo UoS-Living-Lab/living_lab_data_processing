@@ -211,9 +211,10 @@ def create_uplink_setting(conn, uplink_guid, uplink_settings):
 
 @app.route('/uplink/messages', methods=['POST'])
 def ttn_webhook():
-	if config('X_DOWNLINK_APIKEY') not in request.headers:
+	if request.headers.get('X_DOWNLINK_APIKEY') != config('X_DOWNLINK_APIKEY'):
+		print('Unauthorised')
 		status_code = Response(status=401)
-		return
+		return status_code
 	print('Request Authenticated')
 
 	sensor_guids = []
