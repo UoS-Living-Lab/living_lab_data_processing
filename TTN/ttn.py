@@ -42,7 +42,6 @@ app = Flask(__name__)
 
 # Create the application or get the GUID if it already exists
 def create_application(conn, app):
-	print('Creating or getting application')
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_GET_OR_CREATE_TTN_APPLICATION] @application_name= ?, @application_guid = @out OUTPUT;
@@ -54,7 +53,6 @@ def create_application(conn, app):
 
 # Create a warning if one exists in the JSON
 def create_warning(conn, warning = None):
-	print('Creating warning.')
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_CREATE_TTN_TTN_WARNING] @decoded_payload_warning= ?, @warning_guid = @out OUTPUT;
@@ -66,7 +64,6 @@ def create_warning(conn, warning = None):
 
 # Create a gateway entry or get GUID if it already exists
 def create_gateway(conn, gateway_name, location_guid):
-	print('Create or get gateway.')
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_GET_OR_CREATE_TTN_GATEWAY] @location_guid= ?, @gateway_name= ?, @gateway_guid = @out OUTPUT;
@@ -78,7 +75,6 @@ def create_gateway(conn, gateway_name, location_guid):
 
 # Create a location or get GUID if it already exists
 def create_location(conn, latitude, longitude, source = None):
-	print('Get or create location.')
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_GET_OR_CREATE_TTN_LOCATION] @latitude= ?, @longitude= ?, @source= ?, @location_guid = @out OUTPUT;
@@ -90,7 +86,6 @@ def create_location(conn, latitude, longitude, source = None):
 
 # Create a sensor or get GUID if it already exists
 def create_sensor(conn, name, type = None, location = None, m_unit = None):
-	print('Get or create sensor.')
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_GET_OR_CREATE_TTN_SENSOR] @sensor_name= ?, @sensor_type= ?, @sensor_location= ?, @measurement_unit= ?, @sensor_guid = @out OUTPUT;
@@ -102,7 +97,6 @@ def create_sensor(conn, name, type = None, location = None, m_unit = None):
 
 # Create a device or get GUID if it already exists
 def create_device(conn, app_guid, name, location = None, dev_eui = None, join_eui = None, dev_addr = None):
-	print('Get or create device.')
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_GET_OR_CREATE_TTN_DEVICE] @application_guid= ?, @device_name= ?, @device_location= ?, @dev_eui= ?, @join_eui= ?, @dev_addr= ?, @device_guid = @out OUTPUT;
@@ -113,8 +107,6 @@ def create_device(conn, app_guid, name, location = None, dev_eui = None, join_eu
 
 
 def create_uplink(conn, device_guid, session_key_id, f_port, f_cnt, frm_payload, raw_bytes, consumed_airtime, warning_guid = None):
-	print('Create uplink.')
-	
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_CREATE_TTN_UPLINK] @device_guid= ?, @warning_guid= ?, @session_key_id= ?, @f_port= ?, @f_cnt= ?, @frm_payload= ?, @raw_bytes= ?, @consumed_airtime= ?, @uplink_guid = @out OUTPUT;
@@ -125,7 +117,6 @@ def create_uplink(conn, device_guid, session_key_id, f_port, f_cnt, frm_payload,
 
 
 def create_datetime(conn, received_at, rx_guid = None, hop_guid = None, uplink_guid = None):
-	print('Create datetime.')
 	dt = dateutil.parser.isoparse(received_at) # ISO 8601 extended format
 	sql = """\
 		EXEC [dbo].[PROC_CREATE_TTN_DATETIME] @rx_guid= ?, @hop_guid= ?, @uplink_guid= ?, @received_at= ?;
@@ -135,8 +126,6 @@ def create_datetime(conn, received_at, rx_guid = None, hop_guid = None, uplink_g
 
 
 def create_rx(conn, gateway_guid, uplink_guid, rx):
-	print('Create RX.')
-
 	if 'packet_broker' in rx:	# If the JSON contains 'packet broker' entries treat it as a V1 JSON 
 		sql = """\
 			DECLARE @out UNIQUEIDENTIFIER;
@@ -164,7 +153,6 @@ def create_rx(conn, gateway_guid, uplink_guid, rx):
 
 
 def create_hop(conn, rx_guid, hop):
-	print('Create hop.')
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_CREATE_TTN_HOP] @rx_guid= ?, @sender_address= ?, @receiver_name= ?, @receiver_agent= ?, @hop_guid = @out OUTPUT;
@@ -177,7 +165,6 @@ def create_hop(conn, rx_guid, hop):
 
 
 def create_correlation_id(conn, rx_guid, correlation_id):
-	print('Create correlation ID.')
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_CREATE_TTN_CORRELATION_ID] @rx_guid= ?, @correlation_id= ?, @correlation_guid = @out OUTPUT;
@@ -188,7 +175,6 @@ def create_correlation_id(conn, rx_guid, correlation_id):
 
 
 def create_uplink_token(conn, rx_guid, gateway_guid, uplink_token):
-	print('Create uplink token.')
 	sql = """\
 		EXEC [dbo].[PROC_CREATE_TTN_UPLINK_TOKEN] @rx_guid= ?, @gateway_guid= ?, @uplink_token= ?;
 		"""
@@ -197,7 +183,6 @@ def create_uplink_token(conn, rx_guid, gateway_guid, uplink_token):
 
 
 def create_reading(conn, uplink_guid, sensor_guid, sensor_value):
-	print('Create reading.')
 	sql = """\
 		EXEC [dbo].[PROC_CREATE_TTN_READING] @uplink_guid= ?, @sensor_guid= ?, @sensor_value= ?;
 		"""
@@ -206,7 +191,6 @@ def create_reading(conn, uplink_guid, sensor_guid, sensor_value):
 
 
 def create_uplink_setting(conn, uplink_guid, uplink_settings):
-	print('Create uplink setting.')
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_CREATE_TTN_UPLINK_SETTING] @uplink_guid= ?, @bandwidth= ?, @spreading_factor= ?, @data_rate_index= ?, @coding_rate= ?, @frequency= ?, @setting_timestamp= ?, @uplink_setting_guid = @out OUTPUT;
@@ -222,7 +206,7 @@ def ttn_webhook():
 		print('Unauthorised')
 		status_code = Response(status=401)
 		return status_code
-	print('Request Authenticated')
+	print('Request Authenticated, Processing')
 
 	sensor_guids = []
 	sensor_value = []
@@ -290,11 +274,11 @@ def ttn_webhook():
 		for row in sensor_val_temp:
 			sensor_value.append(row)
 
-	print(sensor_val_temp)
 	i = 0
 	for row in sensor_guids:
 		create_reading(conn, uplink_guid, row, sensor_value[i])
 		i = i + 1
+
 
 	#	Commit data and close open database connection
 	commit_db()
