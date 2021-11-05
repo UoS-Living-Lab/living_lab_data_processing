@@ -4,3 +4,6 @@ living_lab_functions.egg-info/PKG-INFO
 living_lab_functions.egg-info/SOURCES.txt
 living_lab_functions.egg-info/dependency_links.txt
 living_lab_functions.egg-info/top_level.txt
+server/__init__.py
+server/routes.py
+server/wsgi.py
