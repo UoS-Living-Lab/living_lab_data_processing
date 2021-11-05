@@ -79,7 +79,7 @@ CREATE TABLE dbresprod.dbo.TTN_RX(
 	gateway_guid UNIQUEIDENTIFIER NOT NULL,
 	uplink_guid UNIQUEIDENTIFIER NOT NULL,
 	rx_time DATETIME NOT NULL,
-	rx_timestamp INT NOT NULL,
+	rx_timestamp BIGINT NOT NULL,
 	rssi INT NOT NULL,
 	channel_rssi INT NOT NULL,
 	snr FLOAT NOT NULL,
@@ -180,7 +180,7 @@ CREATE TABLE dbresprod.dbo.TTN_UPLINK_SETTINGS(
 	data_rate_index INT NOT NULL,
 	coding_rate NVARCHAR(5) NOT NULL,
 	frequency INT NOT NULL,
-	setting_timestamp INT NOT NULL,
+	setting_timestamp BIGINT NOT NULL,
 	CONSTRAINT PK_TTN_UPLINK_SETTINGS PRIMARY KEY (uplink_setting_guid),
 	CONSTRAINT FK_TTN_UPLINK_SETTINGS_TTN_UPLINKS FOREIGN KEY (uplink_guid)
 		REFERENCES dbresprod.dbo.TTN_UPLINKS (uplink_guid)

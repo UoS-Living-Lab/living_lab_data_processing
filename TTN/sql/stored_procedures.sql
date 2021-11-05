@@ -177,7 +177,7 @@ GO
 
 
 /* Create a new RX entry, and return the GUID. */
-CREATE PROCEDURE PROC_CREATE_TTN_RX (@gateway_guid AS UNIQUEIDENTIFIER, @uplink_guid AS UNIQUEIDENTIFIER, @rx_time AS DATETIME, @rx_timestamp AS INT, @rssi AS INT, @channel_rssi AS INT, @snr AS FLOAT, @message_id AS NVARCHAR(30), @forwarder_net_id AS INT, @forwarder_tenant_id AS NVARCHAR(8), @forwarder_cluster_id AS NVARCHAR(15), @home_network_net_id AS INT, @home_network_tenant_id AS NVARCHAR(8), @home_network_cluster_id AS NVARCHAR(12), @rx_guid AS UNIQUEIDENTIFIER OUTPUT)
+CREATE PROCEDURE PROC_CREATE_TTN_RX (@gateway_guid AS UNIQUEIDENTIFIER, @uplink_guid AS UNIQUEIDENTIFIER, @rx_time AS DATETIME, @rx_timestamp AS BIGINT, @rssi AS INT, @channel_rssi AS INT, @snr AS FLOAT, @message_id AS NVARCHAR(30), @forwarder_net_id AS INT, @forwarder_tenant_id AS NVARCHAR(8), @forwarder_cluster_id AS NVARCHAR(15), @home_network_net_id AS INT, @home_network_tenant_id AS NVARCHAR(8), @home_network_cluster_id AS NVARCHAR(12), @rx_guid AS UNIQUEIDENTIFIER OUTPUT)
 AS
 BEGIN
 	SET NOCOUNT ON;
@@ -233,7 +233,7 @@ GO
 
 
 /* Create a new uplink setting entry, and return the GUID. */
-CREATE PROCEDURE PROC_CREATE_TTN_UPLINK_SETTING (@uplink_guid AS UNIQUEIDENTIFIER, @bandwidth AS INT, @spreading_factor AS INT, @data_rate_index AS INT, @coding_rate AS NVARCHAR(5), @frequency AS INT, @setting_timestamp AS INT, @uplink_setting_guid AS UNIQUEIDENTIFIER OUTPUT)
+CREATE PROCEDURE PROC_CREATE_TTN_UPLINK_SETTING (@uplink_guid AS UNIQUEIDENTIFIER, @bandwidth AS INT, @spreading_factor AS INT, @data_rate_index AS INT, @coding_rate AS NVARCHAR(5), @frequency AS INT, @setting_timestamp AS BIGINT, @uplink_setting_guid AS UNIQUEIDENTIFIER OUTPUT)
 AS
 BEGIN
 	SET NOCOUNT ON;
