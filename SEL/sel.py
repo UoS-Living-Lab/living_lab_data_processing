@@ -125,16 +125,14 @@ def create_mode(conn, mode):
 
 
 # 
-def create_update(conn, date_time):
+def create_update(conn, date_time, requestGUID = None, alarmGUID = None, readingGUID = None, outputGUID = None):
 	print('Create Datetime Update')
 	sql = """\
-		DECLARE @out UNIQUEIDENTIFIER;
-		EXEC [dbo].[PROC_CREATE_SEL_UPDATE] @lastUpdate = ?, @updateGUID = @out OUTPUT;
-		SELECT @out AS the_output;
+		EXEC [dbo].[PROC_CREATE_SEL_UPDATE] @requestGUID = ?, @alarmGUID = ?, @readingGUID = ?, @outputGUID = ?, @lastUpdate = ?;
 		"""
-	params = datetime.strptime(date_time, '%Y-%m-%d %H:%M:%S')
-	
-	return execute_procedure(conn, sql, params, True)
+	print(str(requestGUID) + ' ' + str(alarmGUID) + ' ' + str(readingGUID) + ' ' + str(outputGUID))
+	params = (requestGUID, alarmGUID, readingGUID, outputGUID, datetime.strptime(date_time, '%Y-%m-%d %H:%M:%S'))
+	return execute_procedure(conn, sql, params)
 
 
 def create_sensor(conn, sensorName):
@@ -156,16 +154,18 @@ def create_request(conn, reading, unitGUID):
 	details = request['details']
 	blocks = request['blocks'][0]
 
-	updateGUID = str_to_uuid(create_update(conn, details['last_update']))
+	
 	modeGUID = str_to_uuid(create_mode(conn, blocks['mode']))
 
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
-		EXEC [dbo].[PROC_CREATE_SEL_REQUEST] @unitGUID = ?, @updateGUID = ?, @modeGUID = ?, @success = ?, @requestMessage = ?, @requestNow = ?, @requestName = ?, @tz = ?, @updateCycle = ?, @requestGUID = @out OUTPUT;
+		EXEC [dbo].[PROC_CREATE_SEL_REQUEST] @unitGUID = ?, @modeGUID = ?, @success = ?, @requestMessage = ?, @requestNow = ?, @requestName = ?, @tz = ?, @updateCycle = ?, @requestGUID = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (unitGUID, updateGUID, modeGUID, bool(request['success']), request['message'], datetime.strptime(request['now'], '%Y-%m-%dT%H:%M:%S%z'), details['name'], details['tz'], details['update_cycle'])
-	execute_procedure(conn, sql, params)
+	params = (unitGUID, modeGUID, bool(request['success']), request['message'], datetime.strptime(request['now'], '%Y-%m-%dT%H:%M:%S%z'), details['name'], details['tz'], details['update_cycle'])
+	requestGUID = str_to_uuid(execute_procedure(conn, sql, params, True))
+	if details['last_update'] != None:
+		create_update(conn, details['last_update'], requestGUID= requestGUID)
 
 
 # Create new reading
@@ -186,10 +186,9 @@ def create_reading(conn, reading, unitGUID):	###
 			SELECT @out AS the_output;
 			"""
 		params = (unitGUID, mUnitGUID, sensorGUID, int(data['aid']), data['value'], int(data['recharge']), float(data['cycle_pulses']), float(data['start']), float(data['stop']), int(data['dp']))
-
-		print(data['name'])
-
-		execute_procedure(conn, sql, params)
+		reading_guid = str_to_uuid(execute_procedure(conn, sql, params, True))
+		if blocks['last_update'] != None:
+			create_update(conn, blocks['last_update'], readingGUID= reading_guid)
 
 
 # 
@@ -199,18 +198,19 @@ def create_output(conn, reading, unitGUID):	###
 	outputs = blocks['outputs']
 
 	for data in outputs:
-		updateGUID = str_to_uuid(create_update(conn, data['last_update']))
+		
 		modeGUID = str_to_uuid(create_mode(conn, data['mode']))
 		statusGUID = str_to_uuid(create_status(conn, data['status']))
 
 		sql = """ \
 			DECLARE @out UNIQUEIDENTIFIER;
-			EXEC [dbo].[PROC_CREATE_SEL_OUTPUT] @unitGUID = ?, @updateGUID= ?, @modeGUID = ?, @statusGUID = ?, @outputID = ?, @outputName = ?, @highstate = ?, @lowstate = ?, @outputGUID = @out OUTPUT;
+			EXEC [dbo].[PROC_CREATE_SEL_OUTPUT] @unitGUID = ?, @modeGUID = ?, @statusGUID = ?, @outputID = ?, @outputName = ?, @highstate = ?, @lowstate = ?, @outputGUID = @out OUTPUT;
 			SELECT @out AS the_output;
 			"""
-		params = (unitGUID, updateGUID, modeGUID, statusGUID, int(data['oid']), data['name'], data['high_state'], data['low_state'])
-		
-		execute_procedure(conn, sql, params)
+		params = (unitGUID, modeGUID, statusGUID, int(data['oid']), data['name'], data['high_state'], data['low_state'])
+		outputGUID = str_to_uuid(execute_procedure(conn, sql, params, True))
+		if data['last_update'] != None:
+			create_update(conn, data['last_update'], outputGUID= outputGUID)
 
 
 # 
@@ -223,18 +223,15 @@ def create_alarm(conn, reading, unitGUID):	###
 		statusGUID = str_to_uuid(create_status(conn, data['status']))
 		mUnitGUID = str_to_uuid(create_measure_units(conn, data['pulse_units']))
 
-		if type(data['last_change']) == str:
-			last_change = datetime.strptime(data['last_change'], '%Y-%m-%d %H:%M:%S')
-		else:
-			last_change = datetime.strptime('2001-01-01 01:01:01', '%Y-%m-%d %H:%M:%S')
-
 		sql = """ \
 			DECLARE @out UNIQUEIDENTIFIER;
-			EXEC [dbo].[PROC_CREATE_SEL_ALARM] @unitGUID = ?, @typeGUID= ?, @statusGUID = ?, @mUnitGUID = ?, @alarmID = ?, @alarmName = ?, @lastChange = ?, @healthyName = ?, @faultyName = ?, @pulseTotal = ?, @alarmGUID = @out OUTPUT;
+			EXEC [dbo].[PROC_CREATE_SEL_ALARM] @unitGUID = ?, @typeGUID= ?, @statusGUID = ?, @mUnitGUID = ?, @alarmID = ?, @alarmName = ?, @healthyName = ?, @faultyName = ?, @pulseTotal = ?, @alarmGUID = @out OUTPUT;
 			SELECT @out AS the_output;
 			"""
-		params = (unitGUID, typeGUID, statusGUID, mUnitGUID, int(data['aid']), data['name'], last_change, data['healthy_name'], data['faulty_name'], float(data['pulse_total']))
-		execute_procedure(conn, sql, params)
+		params = (unitGUID, typeGUID, statusGUID, mUnitGUID, int(data['aid']), data['name'], data['healthy_name'], data['faulty_name'], float(data['pulse_total']))
+		alarm_guid = str_to_uuid(execute_procedure(conn, sql, params, True))
+		if data['last_change'] != None:
+			create_update(conn, data['last_change'], alarmGUID= alarm_guid)
 
 
 # Main body

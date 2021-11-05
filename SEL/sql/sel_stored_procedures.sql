@@ -79,18 +79,6 @@ END
 GO
 
 
-/* Check if a Update exists, create if it doesnt, or select GUID if it does */
-CREATE PROCEDURE PROC_CREATE_SEL_UPDATE (@lastUpdate AS DATETIME, @updateGUID AS UNIQUEIDENTIFIER OUTPUT)
-AS
-BEGIN
-	SET NOCOUNT ON;
-	SET @updateGUID = NULL
-	SET @updateGUID = NEWID()
-	INSERT INTO dbresprod.dbo.SEL_UPDATES (updateGUID, lastUpdate) VALUES (@updateGUID, @lastUpdate)
-END
-GO
-
-
 /* Check if a Type exists, create if it doesnt, or select GUID if it does */
 CREATE PROCEDURE PROC_CREATE_SEL_SENSOR (@sensorName AS NVARCHAR(20), @sensorGUID AS UNIQUEIDENTIFIER OUTPUT)
 AS
@@ -173,37 +161,37 @@ GO
 
 
 /* Check if an Output exists, create if it doesnt, or select GUID if it does */
-CREATE PROCEDURE PROC_CREATE_SEL_OUTPUT (@unitGUID AS UNIQUEIDENTIFIER, @updateGUID AS UNIQUEIDENTIFIER, @modeGUID AS UNIQUEIDENTIFIER, @statusGUID AS UNIQUEIDENTIFIER, @outputID AS INT, @outputName AS NVARCHAR(50), @highstate AS NVARCHAR(5), @lowstate AS NVARCHAR(5), @outputGUID AS UNIQUEIDENTIFIER OUTPUT)
+CREATE PROCEDURE PROC_CREATE_SEL_OUTPUT (@unitGUID AS UNIQUEIDENTIFIER, @modeGUID AS UNIQUEIDENTIFIER, @statusGUID AS UNIQUEIDENTIFIER, @outputID AS INT, @outputName AS NVARCHAR(50), @highstate AS NVARCHAR(5), @lowstate AS NVARCHAR(5), @outputGUID AS UNIQUEIDENTIFIER OUTPUT)
 AS
 BEGIN
 	SET NOCOUNT ON;
 	SET @outputGUID = NULL
 	SET @outputGUID = NEWID()
-	INSERT INTO dbresprod.dbo.SEL_OUTPUTS (outputGUID, unitGUID, updateGUID, modeGUID, statusGUID, outputID, outputName, highState, lowState) VALUES (@outputGUID, @unitGUID, @updateGUID, @modeGUID, @statusGUID, @outputID, @outputName, @highState, @lowState)
+	INSERT INTO dbresprod.dbo.SEL_OUTPUTS (outputGUID, unitGUID, modeGUID, statusGUID, outputID, outputName, highState, lowState) VALUES (@outputGUID, @unitGUID, @modeGUID, @statusGUID, @outputID, @outputName, @highState, @lowState)
 END
 GO
 
 
 /* Check if an Request exists, create if it doesnt, or select GUID if it does */
-CREATE PROCEDURE PROC_CREATE_SEL_REQUEST (@unitGUID AS UNIQUEIDENTIFIER, @updateGUID AS UNIQUEIDENTIFIER, @modeGUID AS UNIQUEIDENTIFIER, @success AS BIT, @requestMessage AS NVARCHAR(35), @requestNow AS DATETIME, @requestName AS NVARCHAR(50), @tz AS NVARCHAR(25), @updateCycle AS INT, @requestGUID AS UNIQUEIDENTIFIER OUTPUT)
+CREATE PROCEDURE PROC_CREATE_SEL_REQUEST (@unitGUID AS UNIQUEIDENTIFIER, @modeGUID AS UNIQUEIDENTIFIER, @success AS BIT, @requestMessage AS NVARCHAR(35), @requestNow AS DATETIME, @requestName AS NVARCHAR(50), @tz AS NVARCHAR(25), @updateCycle AS INT, @requestGUID AS UNIQUEIDENTIFIER OUTPUT)
 AS
 BEGIN
 	SET NOCOUNT ON;
 	SET @requestGUID = NULL
 	SET @requestGUID = NEWID()
-	INSERT INTO dbresprod.dbo.SEL_REQUESTS (requestGUID, unitGUID, updateGUID, modeGUID, success, requestMessage, requestNow, requestName, tz, updateCycle) VALUES (@requestGUID, @unitGUID, @updateGUID, @modeGUID, @success, @requestMessage, @requestNow, @requestName, @tz, @updateCycle)
+	INSERT INTO dbresprod.dbo.SEL_REQUESTS (requestGUID, unitGUID, modeGUID, success, requestMessage, requestNow, requestName, tz, updateCycle) VALUES (@requestGUID, @unitGUID, @modeGUID, @success, @requestMessage, @requestNow, @requestName, @tz, @updateCycle)
 END
 GO
 
 
 /* Check if an Alarm exists, create if it doesnt, or select GUID if it does */
-CREATE PROCEDURE PROC_CREATE_SEL_ALARM (@unitGUID AS UNIQUEIDENTIFIER, @typeGUID AS UNIQUEIDENTIFIER, @statusGUID AS UNIQUEIDENTIFIER, @mUnitGUID AS UNIQUEIDENTIFIER, @alarmID AS INT, @alarmName AS NVARCHAR(50), @lastChange AS DATETIME, @healthyName AS NVARCHAR(10), @faultyName AS NVARCHAR(10), @pulseTotal AS FLOAT, @alarmGUID AS UNIQUEIDENTIFIER OUTPUT)
+CREATE PROCEDURE PROC_CREATE_SEL_ALARM (@unitGUID AS UNIQUEIDENTIFIER, @typeGUID AS UNIQUEIDENTIFIER, @statusGUID AS UNIQUEIDENTIFIER, @mUnitGUID AS UNIQUEIDENTIFIER, @alarmID AS INT, @alarmName AS NVARCHAR(50), @healthyName AS NVARCHAR(10), @faultyName AS NVARCHAR(10), @pulseTotal AS FLOAT, @alarmGUID AS UNIQUEIDENTIFIER OUTPUT)
 AS
 BEGIN
 	SET NOCOUNT ON;
 	SET @alarmGUID = NULL
 	SET @alarmGUID = NEWID()
-	INSERT INTO dbresprod.dbo.SEL_ALARMS (alarmGUID, unitGUID, typeGUID, statusGUID, mUnitGUID, alarmID, alarmName, lastChange, healthyName, faultyName, pulsetotal) VALUES (@alarmGUID, @unitGUID, @typeGUID, @statusGUID, @mUnitGUID, @alarmID, @alarmName, @lastChange, @healthyName, @faultyName, @pulsetotal)
+	INSERT INTO dbresprod.dbo.SEL_ALARMS (alarmGUID, unitGUID, typeGUID, statusGUID, mUnitGUID, alarmID, alarmName, healthyName, faultyName, pulsetotal) VALUES (@alarmGUID, @unitGUID, @typeGUID, @statusGUID, @mUnitGUID, @alarmID, @alarmName, @healthyName, @faultyName, @pulsetotal)
 END
 GO
 
@@ -216,5 +204,15 @@ BEGIN
 	SET @readingGUID = NULL
 	SET @readingGUID = NEWID()
 	INSERT INTO dbresprod.dbo.SEL_READINGS (readingGUID, unitGUID, mUnitGUID, sensorGUID, analogID, readingValue, recharge, cyclePulses, readingStart, readingStop, dp) VALUES (@readingGUID, @unitGUID, @mUnitGUID, @sensorGUID, @analogID, @readingValue, @recharge, @cyclePulses, @readingStart, @readingStop, @dp)
+END
+GO
+
+
+/* Check if a Update exists, create if it doesnt, or select GUID if it does */
+CREATE PROCEDURE PROC_CREATE_SEL_UPDATE (@requestGUID AS UNIQUEIDENTIFIER, @alarmGUID AS UNIQUEIDENTIFIER, @readingGUID AS UNIQUEIDENTIFIER, @outputGUID AS UNIQUEIDENTIFIER, @lastUpdate AS DATETIME)
+AS
+BEGIN
+	SET NOCOUNT ON;
+	INSERT INTO dbresprod.dbo.SEL_UPDATES (requestGUID, alarmGUID, readingGUID, outputGUID, lastUpdate) VALUES (@requestGUID, @alarmGUID, @readingGUID, @outputGUID, @lastUpdate)
 END
 GO
