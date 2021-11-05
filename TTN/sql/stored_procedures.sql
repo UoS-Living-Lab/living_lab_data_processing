@@ -227,7 +227,7 @@ CREATE PROCEDURE PROC_CREATE_TTN_READING (@uplink_guid AS UNIQUEIDENTIFIER, @sen
 AS
 BEGIN
 	SET NOCOUNT ON;
-	INSERT INTO dbresprod.dbo.READINGS (uplink_guid, sensor_guid, sensor_value) VALUES (@uplink_guid, @sensor_guid, @sensor_value)
+	INSERT INTO dbresprod.dbo.TTN_READINGS (uplink_guid, sensor_guid, sensor_value) VALUES (@uplink_guid, @sensor_guid, @sensor_value)
 END
 GO
 
