@@ -126,13 +126,17 @@ def create_datetime(conn, received_at, rx_guid = None, hop_guid = None, uplink_g
 
 
 def create_rx(conn, gateway_guid, uplink_guid, rx):
+	if 'timestamp' in rx[0]['timestamp']:
+		timestamp = rx[0]['timestamp']
+	else:
+		timestamp = None
 	if 'packet_broker' in rx:	# If the JSON contains 'packet broker' entries treat it as a V1 JSON 
 		sql = """\
 			DECLARE @out UNIQUEIDENTIFIER;
 			EXEC [dbo].[PROC_CREATE_TTN_RX] @gateway_guid= ?, @uplink_guid= ?, @rx_time= ?, @rx_timestamp= ?, @rssi= ?, @channel_rssi= ?, @snr= ?, @message_id= ?, @forwarder_net_id= ?, @forwarder_tenant_id= ?, @forwarder_cluster_id= ?, @home_network_net_id= ?, @home_network_tenant_id= ?, @home_network_cluster_id= ?, @rx_guid = @out OUTPUT;
 			SELECT @out AS the_output;
 			"""
-		params = (gateway_guid, uplink_guid, dateutil.parser.isoparse(rx[0]['time']), int(rx[0]['timestamp']), int(rx[0]['rssi']), int(rx[0]['channel_rssi']), float(rx[0]['snr']), str(rx[1]['message_id']), int(rx[1]['forwarder_net_id']), str(rx[1]['forwarder_tenant_id']), str(rx[1]['forwarder_cluster_id']), int(rx[1]['home_network_net_id']), str(rx[1]['home_network_tenant_id']), str(rx[1]['home_network_cluster_id']))
+		params = (gateway_guid, uplink_guid, dateutil.parser.isoparse(rx[0]['time']), int(timestamp), int(rx[0]['rssi']), int(rx[0]['channel_rssi']), float(rx[0]['snr']), str(rx[1]['message_id']), int(rx[1]['forwarder_net_id']), str(rx[1]['forwarder_tenant_id']), str(rx[1]['forwarder_cluster_id']), int(rx[1]['home_network_net_id']), str(rx[1]['home_network_tenant_id']), str(rx[1]['home_network_cluster_id']))
 		rx_guid =  flask_to_uuid(execute_procedure(conn, sql, params, True))
 		create_hop(conn, rx_guid, rx[1]['packet_broker'])
 	else:	# If 'packet broker' doesn't exist then treat is as a V2 JSON and isgnore the assitional variables
@@ -141,7 +145,7 @@ def create_rx(conn, gateway_guid, uplink_guid, rx):
 			EXEC [dbo].[PROC_CREATE_TTN_RX] @gateway_guid= ?, @uplink_guid= ?, @rx_time= ?, @rx_timestamp= ?, @rssi= ?, @channel_rssi= ?, @snr= ?, @message_id= ?, @forwarder_net_id= ?, @forwarder_tenant_id= ?, @forwarder_cluster_id= ?, @home_network_net_id= ?, @home_network_tenant_id= ?, @home_network_cluster_id= ?, @rx_guid = @out OUTPUT;
 			SELECT @out AS the_output;
 			"""
-		params = (gateway_guid, uplink_guid, dateutil.parser.isoparse(rx[0]['time']), int(rx[0]['timestamp']), int(rx[0]['rssi']), int(rx[0]['channel_rssi']), float(rx[0]['snr']), None, None, None, None, None, None, None)
+		params = (gateway_guid, uplink_guid, dateutil.parser.isoparse(rx[0]['time']), int(timestamp), int(rx[0]['rssi']), int(rx[0]['channel_rssi']), float(rx[0]['snr']), None, None, None, None, None, None, None)
 		rx_guid = flask_to_uuid(execute_procedure(conn, sql, params, True))
 
 	if 'uplink_token' in rx[0]:
