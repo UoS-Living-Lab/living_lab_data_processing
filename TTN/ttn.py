@@ -16,6 +16,8 @@ from flask.wrappers import Response
 from flask_basicauth import BasicAuth
 from werkzeug.serving import WSGIRequestHandler
 from decouple import config
+from datetime import datetime
+import dateutil.parser
 
 from living_lab_functions.db import execute_procedure, get_db, commit_db, close_db
 from living_lab_functions.functions import flask_to_uuid
@@ -46,7 +48,7 @@ def create_application(conn, app):
 		EXEC [dbo].[PROC_GET_OR_CREATE_TTN_APPLICATION] @application_name= ?, @application_guid = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (app['name'])
+	params = (app)
 	return flask_to_uuid(execute_procedure(conn, sql, params, True))
 
 
@@ -67,10 +69,10 @@ def create_gateway(conn, gateway_name, location_guid):
 	print('Create or get gateway.')
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
-		EXEC [dbo].[PROC_GET_OR_CREATE_TTN_GATEWAY] @location_guid= ?, @gateway_name= ?, @location_guid = @out OUTPUT;
+		EXEC [dbo].[PROC_GET_OR_CREATE_TTN_GATEWAY] @location_guid= ?, @gateway_name= ?, @gateway_guid = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (location_guid, gateway_name)
+	params = (location_guid, str(gateway_name))
 	return flask_to_uuid(execute_procedure(conn, sql, params, True))
 
 
@@ -82,7 +84,7 @@ def create_location(conn, latitude, longitude, source = None):
 		EXEC [dbo].[PROC_GET_OR_CREATE_TTN_LOCATION] @latitude= ?, @longitude= ?, @source= ?, @location_guid = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (latitude, longitude, source)
+	params = (float(latitude), float(longitude), str(source))
 	return flask_to_uuid(execute_procedure(conn, sql, params, True))
 
 
@@ -94,7 +96,7 @@ def create_sensor(conn, name, type = None, location = None, m_unit = None):
 		EXEC [dbo].[PROC_GET_OR_CREATE_TTN_SENSOR] @sensor_name= ?, @sensor_type= ?, @sensor_location= ?, @measurement_unit= ?, @sensor_guid = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (name, type, location, m_unit)
+	params = (str(name), str(type), str(location), str(m_unit))
 	return flask_to_uuid(execute_procedure(conn, sql, params, True))
 
 
@@ -106,27 +108,29 @@ def create_device(conn, app_guid, name, location = None, dev_eui = None, join_eu
 		EXEC [dbo].[PROC_GET_OR_CREATE_TTN_DEVICE] @application_guid= ?, @device_name= ?, @device_location= ?, @dev_eui= ?, @join_eui= ?, @dev_addr= ?, @device_guid = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (app_guid, name, location, dev_eui, join_eui, dev_addr)
+	params = (app_guid, str(name), str(location), str(dev_eui), str(join_eui), str(dev_addr))
 	return flask_to_uuid(execute_procedure(conn, sql, params, True))
 
 
 def create_uplink(conn, device_guid, session_key_id, f_port, f_cnt, frm_payload, raw_bytes, consumed_airtime, warning_guid = None):
 	print('Create uplink.')
+	
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_CREATE_TTN_UPLINK] @device_guid= ?, @warning_guid= ?, @session_key_id= ?, @f_port= ?, @f_cnt= ?, @frm_payload= ?, @raw_bytes= ?, @consumed_airtime= ?, @uplink_guid = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (device_guid, warning_guid, session_key_id, f_port, f_cnt, frm_payload, raw_bytes, consumed_airtime)
+	params = (device_guid, warning_guid, str(session_key_id), int(f_port), int(f_cnt), str(frm_payload), str(raw_bytes), float(consumed_airtime[:-1]))
 	return flask_to_uuid(execute_procedure(conn, sql, params, True))
 
 
 def create_datetime(conn, received_at, rx_guid = None, hop_guid = None, uplink_guid = None):
 	print('Create datetime.')
+	dt = dateutil.parser.isoparse(received_at) # ISO 8601 extended format
 	sql = """\
 		EXEC [dbo].[PROC_CREATE_TTN_DATETIME] @rx_guid= ?, @hop_guid= ?, @uplink_guid= ?, @received_at= ?;
 		"""
-	params = (rx_guid, hop_guid, uplink_guid, received_at)
+	params = (rx_guid, hop_guid, uplink_guid, dt)
 	return execute_procedure(conn, sql, params)
 
 
@@ -139,19 +143,22 @@ def create_rx(conn, gateway_guid, uplink_guid, rx):
 			EXEC [dbo].[PROC_CREATE_TTN_RX] @gateway_guid= ?, @uplink_guid= ?, @rx_time= ?, @rx_timestamp= ?, @rssi= ?, @channel_rssi= ?, @snr= ?, @message_id= ?, @forwarder_net_id= ?, @forwarder_tenant_id= ?, @forwarder_cluster_id= ?, @home_network_net_id= ?, @home_network_tenant_id= ?, @home_network_cluster_id= ?, @rx_guid = @out OUTPUT;
 			SELECT @out AS the_output;
 			"""
-		params = (gateway_guid, uplink_guid, rx['rx_time'], rx['rx_timestamp'], rx['rssi'], rx['channel_rssi'], rx['snr'], rx['message_id'], rx['forwarder_net_id'], rx['forwarder_tenant_id'], rx['forwarder_cluster_id'], rx['home_network_net_id'], rx['home_network_tenant_id'], rx['home_network_cluster_id'])
+		params = (gateway_guid, uplink_guid, datetime.strptime(rx[0]['time'], '%Y-%m-%dT%H:%M:%S%z'), int(rx[0]['timestamp']), int(rx[0]['rssi']), int(rx[0]['channel_rssi']), float(rx[0]['snr']), str(rx[1]['message_id']), int(rx[1]['forwarder_net_id']), str(rx[1]['forwarder_tenant_id']), str(rx[1]['forwarder_cluster_id']), int(rx[1]['home_network_net_id']), str(rx[1]['home_network_tenant_id']), str(rx[1]['home_network_cluster_id']))
 		rx_guid =  flask_to_uuid(execute_procedure(conn, sql, params, True))
+		create_hop(conn, rx_guid, rx[1]['packet_broker'])
 	else:	# If 'packet broker' doesn't exist then treat is as a V2 JSON and isgnore the assitional variables
 		sql = """\
 			DECLARE @out UNIQUEIDENTIFIER;
-			EXEC [dbo].[PROC_CREATE_TTN_RX] @gateway_guid= ?, @uplink_guid= ?, @rx_time= ?, @rx_timestamp= ?, @rssi= ?, @channel_rssi= ?, @snr= ?, @rx_guid = @out OUTPUT;
+			EXEC [dbo].[PROC_CREATE_TTN_RX] @gateway_guid= ?, @uplink_guid= ?, @rx_time= ?, @rx_timestamp= ?, @rssi= ?, @channel_rssi= ?, @snr= ?, @message_id= ?, @forwarder_net_id= ?, @forwarder_tenant_id= ?, @forwarder_cluster_id= ?, @home_network_net_id= ?, @home_network_tenant_id= ?, @home_network_cluster_id= ?, @rx_guid = @out OUTPUT;
 			SELECT @out AS the_output;
 			"""
-		params = (gateway_guid, uplink_guid, rx['rx_time'], rx['rx_timestamp'], rx['rssi'], rx['channel_rssi'], rx['snr'])
+		params = (gateway_guid, uplink_guid, datetime.strptime(rx[0]['time'], '%Y-%m-%dT%H:%M:%S%z'), int(rx[0]['timestamp']), int(rx[0]['rssi']), int(rx[0]['channel_rssi']), float(rx[0]['snr']), None, None, None, None, None, None, None)
 		rx_guid = flask_to_uuid(execute_procedure(conn, sql, params, True))
 
-	create_uplink_token(conn, rx_guid, gateway_guid, rx['uplink_token'])	
-	create_hop(conn, rx_guid, rx['packet_broker'])
+	if 'uplink_token' in rx[0]:
+		create_uplink_token(conn, rx_guid, gateway_guid, rx[0]['uplink_token'])
+	elif 'uplink_token' in rx[1]:
+		create_uplink_token(conn, rx_guid, gateway_guid, rx[1]['uplink_token'])
 	
 	return rx_guid
 
@@ -163,7 +170,7 @@ def create_hop(conn, rx_guid, hop):
 		EXEC [dbo].[PROC_CREATE_TTN_HOP] @rx_guid= ?, @sender_address= ?, @receiver_name= ?, @receiver_agent= ?, @hop_guid = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (rx_guid, hop['sender_address'], hop['receiver_name'], hop['receiver_agent'])
+	params = (rx_guid, str(hop['sender_address']), str(hop['receiver_name']), str(hop['receiver_agent']))
 	hop_guid = flask_to_uuid(execute_procedure(conn, sql, params, True))
 	create_datetime(conn, hop['received_at'], hop_guid = hop_guid) # Only run if parsing a V1 JSON
 	return hop_guid
@@ -176,7 +183,7 @@ def create_correlation_id(conn, rx_guid, correlation_id):
 		EXEC [dbo].[PROC_CREATE_TTN_CORRELATION_ID] @rx_guid= ?, @correlation_id= ?, @correlation_guid = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (rx_guid, correlation_id)
+	params = (rx_guid, str(correlation_id))
 	return flask_to_uuid(execute_procedure(conn, sql, params, True))
 
 
@@ -185,7 +192,7 @@ def create_uplink_token(conn, rx_guid, gateway_guid, uplink_token):
 	sql = """\
 		EXEC [dbo].[PROC_CREATE_TTN_UPLINK_TOKEN] @rx_guid= ?, @gateway_guid= ?, @uplink_token= ?;
 		"""
-	params = (rx_guid, gateway_guid, uplink_token)
+	params = (rx_guid, gateway_guid, str(uplink_token))
 	return execute_procedure(conn, sql, params)
 
 
@@ -194,7 +201,7 @@ def create_reading(conn, uplink_guid, sensor_guid, sensor_value):
 	sql = """\
 		EXEC [dbo].[PROC_CREATE_TTN_READING] @uplink_guid= ?, @sensor_guid= ?, @sensor_value= ?;
 		"""
-	params = (uplink_guid, sensor_guid, sensor_value)
+	params = (uplink_guid, sensor_guid, str(sensor_value))
 	return execute_procedure(conn, sql, params)
 
 
@@ -205,7 +212,7 @@ def create_uplink_setting(conn, uplink_guid, uplink_settings):
 		EXEC [dbo].[PROC_CREATE_TTN_UPLINK_SETTING] @uplink_guid= ?, @bandwidth= ?, @spreading_factor= ?, @data_rate_index= ?, @coding_rate= ?, @frequency= ?, @setting_timestamp= ?, @uplink_setting_guid = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (uplink_guid, uplink_settings['bandwidth'], uplink_settings['spreading_factor'], uplink_settings['data_rate_index'], uplink_settings['coding_rate'], uplink_settings['frequency'], uplink_settings['setting_timestamp'])
+	params = (uplink_guid, int(uplink_settings['data_rate']['lora']['bandwidth']), int(uplink_settings['data_rate']['lora']['spreading_factor']), int(uplink_settings['data_rate_index']), str(uplink_settings['coding_rate']), int(uplink_settings['frequency']), int(uplink_settings['timestamp']))
 	return flask_to_uuid(execute_procedure(conn, sql, params, True))
 
 
@@ -228,18 +235,21 @@ def ttn_webhook():
 
 	proc = request.json	# Store the recieved JSON file from the request
 
-	#TODO JSON SPLITTING AND PROCESSING HERE
 	app_guid = create_application(conn, proc['end_device_ids']['application_ids']['application_id'])
 	device_guid = create_device(conn, app_guid, proc['end_device_ids']['device_id'], dev_eui = proc['end_device_ids']['dev_eui'], join_eui = proc['end_device_ids']['join_eui'], dev_addr = proc['end_device_ids']['dev_addr'])
 	
-	if 'decoded_payload_warnings' in proc['uplink_message']:
+	if proc['uplink_message']['decoded_payload_warnings']:
 		warning_guid = create_warning(conn, proc['uplink_message']['decoded_payload_warnings'])
 	
+	if 'raw_bytes' in proc['uplink_message']['decoded_payload']:
+		raw_bytes = proc['uplink_message']['decoded_payload']['raw_bytes']
+	else:
+		raw_bytes = proc['uplink_message']['decoded_payload']['bytes']
 
 	if warning_guid == None:
-		uplink_guid = create_uplink(conn, device_guid, proc['uplink_message']['session_key_id'], proc['uplink_message']['f_port'], proc['uplink_message']['f_cnt'], proc['uplink_message']['frm_payload'], str(proc['uplink_message']['raw_bytes']), proc['uplink_message']['consumed_airtime'])
+		uplink_guid = create_uplink(conn, device_guid, proc['uplink_message']['session_key_id'], proc['uplink_message']['f_port'], proc['uplink_message']['f_cnt'], proc['uplink_message']['frm_payload'], str(raw_bytes), proc['uplink_message']['consumed_airtime'])
 	else:
-		uplink_guid = create_uplink(conn, device_guid, proc['uplink_message']['session_key_id'], proc['uplink_message']['f_port'], proc['uplink_message']['f_cnt'], proc['uplink_message']['frm_payload'], str(proc['uplink_message']['raw_bytes']), proc['uplink_message']['consumed_airtime'], warning_guid)	
+		uplink_guid = create_uplink(conn, device_guid, proc['uplink_message']['session_key_id'], proc['uplink_message']['f_port'], proc['uplink_message']['f_cnt'], proc['uplink_message']['frm_payload'], str(raw_bytes), proc['uplink_message']['consumed_airtime'], warning_guid)	
 	create_datetime(conn, proc['uplink_message']['received_at'], uplink_guid = uplink_guid)
 
 
@@ -252,27 +262,45 @@ def ttn_webhook():
 	rx_guid = create_rx(conn, gateway_guid, uplink_guid, rx_list)	# Store created GUID for later dependencies and datetime creation
 	create_datetime(conn, proc['received_at'], rx_guid = rx_guid)	# Create a datetime entry using the stored RX_GUID
 
-	#	Parse sensor names from received JSON and get GUIDs
-	for row in proc['uplink_message']['decoded_payload']['s_name']:
-		sensor_guids.append(create_sensor(conn,row))
+
 	#	Parse correlation IDs from received JSON and create entries
 	for row in proc['correlation_ids']:
 		correlation_guid.append(create_correlation_id(conn, rx_guid, row))
 
 	create_uplink_setting(conn, uplink_guid, proc['uplink_message']['settings'])	#	Create an uplink settings entry for the recieved uplink
 
-	for row in proc['uplink_message']['decoded_payload']['s_value']:
-		sensor_value.append(row)
+
+	#	Check if the newer 's_name' and 's_value' arrays exist in JSON, if not process each measurand manually from the old format.
+	if 's_value' and 's_name' in proc['uplink_message']['decoded_payload']:
+		#	Parse sensor names and get GUIDs
+		for row in proc['uplink_message']['decoded_payload']['s_name']:
+			sensor_guids.append(create_sensor(conn,row))
+		#	Parse sensor values
+		for row in proc['uplink_message']['decoded_payload']['s_value']:
+			sensor_value.append(row)
+	else:
+		print('Processing Legacy JSON...')
+		#	Manually get sensor data fields old JSON format.
+		sensor_names_temp = ['Altitude', 'Battery Voltage', 'Humidity', 'Pressure', 'Rain Detect', 'Solar Voltage', 'Temperature']
+		sensor_val_temp = [proc['uplink_message']['decoded_payload']['altitude'], proc['uplink_message']['decoded_payload']['battery_voltage'], proc['uplink_message']['decoded_payload']['humidity'], proc['uplink_message']['decoded_payload']['pressure'], proc['uplink_message']['decoded_payload']['rain_detect'], proc['uplink_message']['decoded_payload']['solar_voltage'], proc['uplink_message']['decoded_payload']['temp']]
+		#	Parse sensor names and get GUIDs
+		for row in sensor_names_temp:
+			sensor_guids.append(create_sensor(conn,row))
+		#	Parse sensor values
+		for row in sensor_val_temp:
+			sensor_value.append(row)
+
+	print(sensor_val_temp)
 	i = 0
 	for row in sensor_guids:
 		create_reading(conn, uplink_guid, row, sensor_value[i])
 		i = i + 1
 
-	# Commit data and close open database connection
+	#	Commit data and close open database connection
 	commit_db()
 	close_db()
 
-	# Return status 200 (success) to the remote client
+	#	Return status 200 (success) to the remote client
 	status_code = Response(status=200)
 	return status_code
 
