@@ -130,7 +130,6 @@ def create_update(conn, date_time, requestGUID = None, alarmGUID = None, reading
 	sql = """\
 		EXEC [dbo].[PROC_CREATE_SEL_UPDATE] @requestGUID = ?, @alarmGUID = ?, @readingGUID = ?, @outputGUID = ?, @lastUpdate = ?;
 		"""
-	print(str(requestGUID) + ' ' + str(alarmGUID) + ' ' + str(readingGUID) + ' ' + str(outputGUID))
 	params = (requestGUID, alarmGUID, readingGUID, outputGUID, datetime.strptime(date_time, '%Y-%m-%d %H:%M:%S'))
 	return execute_procedure(conn, sql, params)
 
