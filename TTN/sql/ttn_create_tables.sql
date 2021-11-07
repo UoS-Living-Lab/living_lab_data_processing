@@ -20,7 +20,7 @@ CREATE TABLE dbresprod.dbo.TTN_LOCATIONS(
 
 CREATE TABLE dbresprod.dbo.TTN_GATEWAYS(
 	gateway_guid UNIQUEIDENTIFIER NOT NULL,
-	location_guid UNIQUEIDENTIFIER NOT NULL,
+	location_guid UNIQUEIDENTIFIER NULL,
 	gateway_name NVARCHAR(30) NOT NULL,
 	CONSTRAINT PK_TTN_GATEWAYS PRIMARY KEY (gateway_guid),
 	CONSTRAINT FK_TTN_GATEWAYS_TTN_LOCATIONS FOREIGN KEY (location_guid)
@@ -57,12 +57,12 @@ CREATE TABLE dbresprod.dbo.TTN_UPLINKS(
 	uplink_guid UNIQUEIDENTIFIER NOT NULL,
 	device_guid UNIQUEIDENTIFIER NOT NULL,
 	warning_guid UNIQUEIDENTIFIER NULL,
-	session_key_id NVARCHAR(40) NOT NULL,
-	f_port INT NOT NULL,
-	f_cnt INT NOT NULL,
-	frm_payload NVARCHAR(50) NOT NULL,
-	raw_bytes NVARCHAR(50) NOT NULL,
-	consumed_airtime FLOAT NOT NULL,
+	session_key_id NVARCHAR(40) NULL,
+	f_port INT NULL,
+	f_cnt INT NULL,
+	frm_payload NVARCHAR(50) NULL,
+	raw_bytes NVARCHAR(50) NULL,
+	consumed_airtime FLOAT NULL,
 	CONSTRAINT PK_TTN_UPLINKS PRIMARY KEY (uplink_guid),
 	CONSTRAINT FK_TTN_UPLINKS_TTN_DEVICES FOREIGN KEY (device_guid)
 		REFERENCES dbresprod.dbo.TTN_DEVICES (device_guid)
