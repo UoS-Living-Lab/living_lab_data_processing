@@ -55,7 +55,7 @@ def create_application(conn, app):
 def create_warning(conn, warning = None):
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
-		EXEC [dbo].[PROC_CREATE_TTN_TTN_WARNING] @decoded_payload_warning= ?, @warning_guid = @out OUTPUT;
+		EXEC [dbo].[PROC_CREATE_TTN_WARNING] @decoded_payload_warning= ?, @warning_guid = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
 	params = (warning)
@@ -63,7 +63,7 @@ def create_warning(conn, warning = None):
 
 
 # Create a gateway entry or get GUID if it already exists
-def create_gateway(conn, gateway_name, location_guid):
+def create_gateway(conn, gateway_name, location_guid = None):
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_GET_OR_CREATE_TTN_GATEWAY] @location_guid= ?, @gateway_name= ?, @gateway_guid = @out OUTPUT;
@@ -106,13 +106,17 @@ def create_device(conn, app_guid, name, location = None, dev_eui = None, join_eu
 	return flask_to_uuid(execute_procedure(conn, sql, params, True))
 
 
-def create_uplink(conn, device_guid, session_key_id, f_port, f_cnt, frm_payload, raw_bytes, consumed_airtime, warning_guid = None):
+def create_uplink(conn, device_guid, session_key_id = None, f_port = None, f_cnt = None, frm_payload = None, raw_bytes = None, consumed_airtime= None, warning_guid = None):
+
+	if consumed_airtime != None:
+		consumed_airtime = float(consumed_airtime)[:-1]
+
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_CREATE_TTN_UPLINK] @device_guid= ?, @warning_guid= ?, @session_key_id= ?, @f_port= ?, @f_cnt= ?, @frm_payload= ?, @raw_bytes= ?, @consumed_airtime= ?, @uplink_guid = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (device_guid, warning_guid, str(session_key_id), int(f_port), int(f_cnt), str(frm_payload), str(raw_bytes), float(consumed_airtime[:-1]))
+	params = (device_guid, warning_guid, str(session_key_id), int(f_port), int(f_cnt), str(frm_payload), str(raw_bytes), consumed_airtime)
 	return flask_to_uuid(execute_procedure(conn, sql, params, True))
 
 
@@ -126,17 +130,21 @@ def create_datetime(conn, received_at, rx_guid = None, hop_guid = None, uplink_g
 
 
 def create_rx(conn, gateway_guid, uplink_guid, rx):
-	if 'timestamp' in rx[0]['timestamp']:
+	if 'timestamp' in rx[0]:
 		timestamp = rx[0]['timestamp']
 	else:
 		timestamp = None
+	if 'time' in rx[0]:
+		time = dateutil.parser.isoparse(rx[0]['time'])
+	else:
+		time = None
 	if 'packet_broker' in rx:	# If the JSON contains 'packet broker' entries treat it as a V1 JSON 
 		sql = """\
 			DECLARE @out UNIQUEIDENTIFIER;
 			EXEC [dbo].[PROC_CREATE_TTN_RX] @gateway_guid= ?, @uplink_guid= ?, @rx_time= ?, @rx_timestamp= ?, @rssi= ?, @channel_rssi= ?, @snr= ?, @message_id= ?, @forwarder_net_id= ?, @forwarder_tenant_id= ?, @forwarder_cluster_id= ?, @home_network_net_id= ?, @home_network_tenant_id= ?, @home_network_cluster_id= ?, @rx_guid = @out OUTPUT;
 			SELECT @out AS the_output;
 			"""
-		params = (gateway_guid, uplink_guid, dateutil.parser.isoparse(rx[0]['time']), int(timestamp), int(rx[0]['rssi']), int(rx[0]['channel_rssi']), float(rx[0]['snr']), str(rx[1]['message_id']), int(rx[1]['forwarder_net_id']), str(rx[1]['forwarder_tenant_id']), str(rx[1]['forwarder_cluster_id']), int(rx[1]['home_network_net_id']), str(rx[1]['home_network_tenant_id']), str(rx[1]['home_network_cluster_id']))
+		params = (gateway_guid, uplink_guid, time, int(timestamp), int(rx[0]['rssi']), int(rx[0]['channel_rssi']), float(rx[0]['snr']), str(rx[1]['message_id']), int(rx[1]['forwarder_net_id']), str(rx[1]['forwarder_tenant_id']), str(rx[1]['forwarder_cluster_id']), int(rx[1]['home_network_net_id']), str(rx[1]['home_network_tenant_id']), str(rx[1]['home_network_cluster_id']))
 		rx_guid =  flask_to_uuid(execute_procedure(conn, sql, params, True))
 		create_hop(conn, rx_guid, rx[1]['packet_broker'])
 	else:	# If 'packet broker' doesn't exist then treat is as a V2 JSON and isgnore the assitional variables
@@ -145,7 +153,7 @@ def create_rx(conn, gateway_guid, uplink_guid, rx):
 			EXEC [dbo].[PROC_CREATE_TTN_RX] @gateway_guid= ?, @uplink_guid= ?, @rx_time= ?, @rx_timestamp= ?, @rssi= ?, @channel_rssi= ?, @snr= ?, @message_id= ?, @forwarder_net_id= ?, @forwarder_tenant_id= ?, @forwarder_cluster_id= ?, @home_network_net_id= ?, @home_network_tenant_id= ?, @home_network_cluster_id= ?, @rx_guid = @out OUTPUT;
 			SELECT @out AS the_output;
 			"""
-		params = (gateway_guid, uplink_guid, dateutil.parser.isoparse(rx[0]['time']), int(timestamp), int(rx[0]['rssi']), int(rx[0]['channel_rssi']), float(rx[0]['snr']), None, None, None, None, None, None, None)
+		params = (gateway_guid, uplink_guid, time, int(timestamp), int(rx[0]['rssi']), int(rx[0]['channel_rssi']), float(rx[0]['snr']), None, None, None, None, None, None, None)
 		rx_guid = flask_to_uuid(execute_procedure(conn, sql, params, True))
 
 	if 'uplink_token' in rx[0]:
@@ -212,11 +220,19 @@ def ttn_webhook():
 		return status_code
 	print('Request Authenticated, Processing')
 
+
 	sensor_guids = []
 	sensor_value = []
-	warning_guid = None
 	correlation_guid = []
 	rx_list = []
+
+	session_key_id = None
+	f_port = None
+	f_cnt = None
+	frm_payload = None
+	consumed_airtime = None
+	warning_guid = None
+	
 
 	# Connect to DB and get an app context with teh connector
 	conn = get_db(SQL_CONN_STR)
@@ -226,18 +242,29 @@ def ttn_webhook():
 	app_guid = create_application(conn, proc['end_device_ids']['application_ids']['application_id'])
 	device_guid = create_device(conn, app_guid, proc['end_device_ids']['device_id'], dev_eui = proc['end_device_ids']['dev_eui'], join_eui = proc['end_device_ids']['join_eui'], dev_addr = proc['end_device_ids']['dev_addr'])
 	
-	if proc['uplink_message']['decoded_payload_warnings']:
-		warning_guid = create_warning(conn, proc['uplink_message']['decoded_payload_warnings'])
-	
+	#	Unpack subobject into variables to check if they exist.
+	if 'decoded_payload_warnings' in proc['uplink_message']:
+		if proc['uplink_message']['decoded_payload_warnings']:
+			warning_guid = create_warning(conn, proc['uplink_message']['decoded_payload_warnings'])	
 	if 'raw_bytes' in proc['uplink_message']['decoded_payload']:
 		raw_bytes = proc['uplink_message']['decoded_payload']['raw_bytes']
-	else:
+	elif 'bytes' in proc['uplink_message']['decoded_payload']:
 		raw_bytes = proc['uplink_message']['decoded_payload']['bytes']
-
-	if warning_guid == None:
-		uplink_guid = create_uplink(conn, device_guid, proc['uplink_message']['session_key_id'], proc['uplink_message']['f_port'], proc['uplink_message']['f_cnt'], proc['uplink_message']['frm_payload'], str(raw_bytes), proc['uplink_message']['consumed_airtime'])
 	else:
-		uplink_guid = create_uplink(conn, device_guid, proc['uplink_message']['session_key_id'], proc['uplink_message']['f_port'], proc['uplink_message']['f_cnt'], proc['uplink_message']['frm_payload'], str(raw_bytes), proc['uplink_message']['consumed_airtime'], warning_guid)	
+		raw_bytes = None
+
+	if 'session_key_id' in proc['uplink_message']:
+		session_key_id = proc['uplink_message']['session_key_id']
+	if 'f_port' in proc['uplink_message']:
+		f_port = proc['uplink_message']['f_port']
+	if 'f_cnt' in proc['uplink_message']:
+		f_cnt = proc['uplink_message']['f_cnt']
+	if 'frm_payload' in proc['uplink_message']['frm_payload']:
+		frm_payload = proc['uplink_message']['frm_payload']
+	if 'consumed_airtime' in proc['uplink_message']['consumed_airtime']:
+		consumed_airtime = proc['uplink_message']['consumed_airtime']
+
+	uplink_guid = create_uplink(conn, device_guid, session_key_id, f_port, f_cnt, frm_payload, raw_bytes, consumed_airtime, warning_guid)	
 	create_datetime(conn, proc['uplink_message']['received_at'], uplink_guid = uplink_guid)
 
 
@@ -246,6 +273,8 @@ def ttn_webhook():
 		if 'location' in row:
 			location_guid = create_location(conn, row['location']['latitude'], row['location']['longitude'])
 			gateway_guid = create_gateway(conn, row['gateway_ids']['gateway_id'], location_guid)
+		elif 'gateway_ids' in row:
+			gateway_guid = create_gateway(conn, row['gateway_ids']['gateway_id'])
 
 	rx_guid = create_rx(conn, gateway_guid, uplink_guid, rx_list)	# Store created GUID for later dependencies and datetime creation
 	create_datetime(conn, proc['received_at'], rx_guid = rx_guid)	# Create a datetime entry using the stored RX_GUID
