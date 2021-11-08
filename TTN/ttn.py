@@ -130,21 +130,54 @@ def create_datetime(conn, received_at, rx_guid = None, hop_guid = None, uplink_g
 
 
 def create_rx(conn, gateway_guid, uplink_guid, rx):
+	time = None
+	timestamp = None
+	rssi = None
+	channel_rssi = None
+	snr = None
+
 	if 'timestamp' in rx[0]:
-		timestamp = rx[0]['timestamp']
-	else:
-		timestamp = None
+		timestamp = int(rx[0]['timestamp'])
 	if 'time' in rx[0]:
 		time = dateutil.parser.isoparse(rx[0]['time'])
-	else:
-		time = None
+	if 'rssi' in rx[0]:
+		rssi = int(rx[0]['rssi'])
+	if 'channel_rssi' in rx[0]:
+		channel_rssi = int(rx[0]['channel_rssi'])
+	if 'snr' in rx[0]:
+		snr = float(rx[0]['snr'])
+
 	if 'packet_broker' in rx:	# If the JSON contains 'packet broker' entries treat it as a V1 JSON 
+		#	Unpack values and check if they exist
+		message_id = None
+		forwarder_net_id = None
+		forwarder_tenant_id = None
+		forwarder_cluster_id = None
+		home_network_net_id = None
+		home_network_tenant_id = None
+		home_network_cluster_id = None
+		
+		if 'message_id' in rx[1]:
+			message_id = str(rx[1]['message_id'])
+		if 'forwarder_net_id' in rx[1]:
+			forwarder_net_id = int(rx[1]['forwarder_net_id'])
+		if 'forwarder_tenant_id' in rx[1]['forwarder_tenant_id']:
+			forwarder_tenant_id = str(rx[1]['forwarder_tenant_id'])
+		if 'forwarder_cluster_id' in rx[1]['forwarder_cluster_id']:
+			forwarder_cluster_id = str(rx[1]['forwarder_cluster_id'])
+		if 'home_network_net_id' in rx[1]['home_network_net_id']:
+			home_network_net_id = int(rx[1]['home_network_net_id'])
+		if 'home_network_tenant_id' in rx[1]['home_network_tenant_id']:
+			home_network_tenant_id = str(rx[1]['home_network_tenant_id'])
+		if 'home_network_cluster_id' in rx[1]['home_network_cluster_id']:
+			home_network_cluster_id = str(rx[1]['home_network_cluster_id'])
+		
 		sql = """\
 			DECLARE @out UNIQUEIDENTIFIER;
 			EXEC [dbo].[PROC_CREATE_TTN_RX] @gateway_guid= ?, @uplink_guid= ?, @rx_time= ?, @rx_timestamp= ?, @rssi= ?, @channel_rssi= ?, @snr= ?, @message_id= ?, @forwarder_net_id= ?, @forwarder_tenant_id= ?, @forwarder_cluster_id= ?, @home_network_net_id= ?, @home_network_tenant_id= ?, @home_network_cluster_id= ?, @rx_guid = @out OUTPUT;
 			SELECT @out AS the_output;
 			"""
-		params = (gateway_guid, uplink_guid, time, int(timestamp), int(rx[0]['rssi']), int(rx[0]['channel_rssi']), float(rx[0]['snr']), str(rx[1]['message_id']), int(rx[1]['forwarder_net_id']), str(rx[1]['forwarder_tenant_id']), str(rx[1]['forwarder_cluster_id']), int(rx[1]['home_network_net_id']), str(rx[1]['home_network_tenant_id']), str(rx[1]['home_network_cluster_id']))
+		params = (gateway_guid, uplink_guid, time, timestamp, rssi, channel_rssi, snr, message_id, forwarder_net_id, forwarder_tenant_id, forwarder_cluster_id, home_network_net_id, home_network_tenant_id, home_network_cluster_id)
 		rx_guid =  flask_to_uuid(execute_procedure(conn, sql, params, True))
 		create_hop(conn, rx_guid, rx[1]['packet_broker'])
 	else:	# If 'packet broker' doesn't exist then treat is as a V2 JSON and isgnore the assitional variables
@@ -153,7 +186,7 @@ def create_rx(conn, gateway_guid, uplink_guid, rx):
 			EXEC [dbo].[PROC_CREATE_TTN_RX] @gateway_guid= ?, @uplink_guid= ?, @rx_time= ?, @rx_timestamp= ?, @rssi= ?, @channel_rssi= ?, @snr= ?, @message_id= ?, @forwarder_net_id= ?, @forwarder_tenant_id= ?, @forwarder_cluster_id= ?, @home_network_net_id= ?, @home_network_tenant_id= ?, @home_network_cluster_id= ?, @rx_guid = @out OUTPUT;
 			SELECT @out AS the_output;
 			"""
-		params = (gateway_guid, uplink_guid, time, int(timestamp), int(rx[0]['rssi']), int(rx[0]['channel_rssi']), float(rx[0]['snr']), None, None, None, None, None, None, None)
+		params = (gateway_guid, uplink_guid, time, timestamp, rssi, channel_rssi, snr, None, None, None, None, None, None, None)
 		rx_guid = flask_to_uuid(execute_procedure(conn, sql, params, True))
 
 	if 'uplink_token' in rx[0]:
@@ -203,12 +236,16 @@ def create_reading(conn, uplink_guid, sensor_guid, sensor_value):
 
 
 def create_uplink_setting(conn, uplink_guid, uplink_settings):
+	if 'timestamp' in uplink_settings:
+		setting_timestamp = int(uplink_settings['timestamp'])
+	else:
+		setting_timestamp = None
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_CREATE_TTN_UPLINK_SETTING] @uplink_guid= ?, @bandwidth= ?, @spreading_factor= ?, @data_rate_index= ?, @coding_rate= ?, @frequency= ?, @setting_timestamp= ?, @uplink_setting_guid = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (uplink_guid, int(uplink_settings['data_rate']['lora']['bandwidth']), int(uplink_settings['data_rate']['lora']['spreading_factor']), int(uplink_settings['data_rate_index']), str(uplink_settings['coding_rate']), int(uplink_settings['frequency']), int(uplink_settings['timestamp']))
+	params = (uplink_guid, int(uplink_settings['data_rate']['lora']['bandwidth']), int(uplink_settings['data_rate']['lora']['spreading_factor']), int(uplink_settings['data_rate_index']), str(uplink_settings['coding_rate']), int(uplink_settings['frequency']), setting_timestamp)
 	return flask_to_uuid(execute_procedure(conn, sql, params, True))
 
 
