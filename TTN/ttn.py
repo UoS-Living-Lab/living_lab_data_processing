@@ -320,13 +320,13 @@ def ttn_webhook():
 	create_uplink_setting(conn, uplink_guid, proc['uplink_message']['settings'])	#	Create an uplink settings entry for the recieved uplink
 
 
-	#	Check if the newer 's_name' and 's_value' arrays exist in JSON, if not process each measurand manually from the old format.
-	if 's_value' and 's_name' in proc['uplink_message']['decoded_payload']:
+	#	Check if the newer 'sensor_names' and 'sensor_data' arrays exist in JSON, if not process each measurand manually from the old format.
+	if 'sensor_data' and 'sensor_names' in proc['uplink_message']['decoded_payload']:
 		#	Parse sensor names and get GUIDs
-		for row in proc['uplink_message']['decoded_payload']['s_name']:
+		for row in proc['uplink_message']['decoded_payload']['sensor_names']:
 			sensor_guids.append(create_sensor(conn,row))
 		#	Parse sensor values
-		for row in proc['uplink_message']['decoded_payload']['s_value']:
+		for row in proc['uplink_message']['decoded_payload']['sensor_data']:
 			sensor_value.append(row)
 	else:
 		print('Processing Legacy JSON...')
