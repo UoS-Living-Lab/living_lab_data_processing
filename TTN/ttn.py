@@ -107,16 +107,12 @@ def create_device(conn, app_guid, name, location = None, dev_eui = None, join_eu
 
 
 def create_uplink(conn, device_guid, session_key_id = None, f_port = None, f_cnt = None, frm_payload = None, raw_bytes = None, consumed_airtime= None, warning_guid = None):
-
-	if consumed_airtime != None:
-		consumed_airtime = float(consumed_airtime)[:-1]
-
 	sql = """\
 		DECLARE @out UNIQUEIDENTIFIER;
 		EXEC [dbo].[PROC_CREATE_TTN_UPLINK] @device_guid= ?, @warning_guid= ?, @session_key_id= ?, @f_port= ?, @f_cnt= ?, @frm_payload= ?, @raw_bytes= ?, @consumed_airtime= ?, @uplink_guid = @out OUTPUT;
 		SELECT @out AS the_output;
 		"""
-	params = (device_guid, warning_guid, str(session_key_id), int(f_port), int(f_cnt), str(frm_payload), str(raw_bytes), consumed_airtime)
+	params = (device_guid, warning_guid, session_key_id, f_port, f_cnt, frm_payload, raw_bytes, consumed_airtime)
 	return flask_to_uuid(execute_procedure(conn, sql, params, True))
 
 
@@ -284,22 +280,22 @@ def ttn_webhook():
 		if proc['uplink_message']['decoded_payload_warnings']:
 			warning_guid = create_warning(conn, proc['uplink_message']['decoded_payload_warnings'])	
 	if 'raw_bytes' in proc['uplink_message']['decoded_payload']:
-		raw_bytes = proc['uplink_message']['decoded_payload']['raw_bytes']
+		raw_bytes = str(proc['uplink_message']['decoded_payload']['raw_bytes'])
 	elif 'bytes' in proc['uplink_message']['decoded_payload']:
-		raw_bytes = proc['uplink_message']['decoded_payload']['bytes']
+		raw_bytes = str(proc['uplink_message']['decoded_payload']['bytes'])
 	else:
 		raw_bytes = None
 
 	if 'session_key_id' in proc['uplink_message']:
-		session_key_id = proc['uplink_message']['session_key_id']
+		session_key_id = str(proc['uplink_message']['session_key_id'])
 	if 'f_port' in proc['uplink_message']:
-		f_port = proc['uplink_message']['f_port']
+		f_port = int(proc['uplink_message']['f_port'])
 	if 'f_cnt' in proc['uplink_message']:
-		f_cnt = proc['uplink_message']['f_cnt']
-	if 'frm_payload' in proc['uplink_message']['frm_payload']:
-		frm_payload = proc['uplink_message']['frm_payload']
-	if 'consumed_airtime' in proc['uplink_message']['consumed_airtime']:
-		consumed_airtime = proc['uplink_message']['consumed_airtime']
+		f_cnt = int(proc['uplink_message']['f_cnt'])
+	if 'frm_payload' in proc['uplink_message']:
+		frm_payload = str(proc['uplink_message']['frm_payload'])
+	if 'consumed_airtime' in proc['uplink_message']:
+		consumed_airtime = float(proc['uplink_message']['consumed_airtime'][:-1])
 
 	uplink_guid = create_uplink(conn, device_guid, session_key_id, f_port, f_cnt, frm_payload, raw_bytes, consumed_airtime, warning_guid)	
 	create_datetime(conn, proc['uplink_message']['received_at'], uplink_guid = uplink_guid)
