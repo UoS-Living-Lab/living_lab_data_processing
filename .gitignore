@@ -11,7 +11,10 @@ living_lab_functions.egg-info
 TTN/data
 TTN/jupyter
 SEL/__pycache__
-SEL/data
 SEL/jupyter
 NOVUS/jupyter
+
+# Data files
+iMonnit/data
+SEL/data
 NOVUS/data
