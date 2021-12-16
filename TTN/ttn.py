@@ -24,6 +24,7 @@ from living_lab_functions.functions import flask_to_uuid
 
 
 # Batabase access credentials
+DB_DRIVER = config('DB_DRIVER')
 DB_URL = config('AZURE_DB_SERVER')
 DB_BATABASE = config('AZURE_DB_DATABASE')
 DB_USR = config('AZURE_DB_USR')
@@ -33,7 +34,7 @@ API_ACCESS_TOKEN = config('X_DOWNLINK_APIKEY')
 
 
 # Formatted connection string for the SQL DB.
-SQL_CONN_STR = "DSN={0};Database={1};UID={2};PWD={3};".format(DB_URL, DB_BATABASE, DB_USR, DB_PWD)
+SQL_CONN_STR = "DRIVER={0};SERVER={1};Database={2};UID={3};PWD={4};".format(DB_DRIVER, DB_URL, DB_BATABASE, DB_USR, DB_PWD)
 
 
 # Flask web server
