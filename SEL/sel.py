@@ -22,6 +22,7 @@ BASE_URL = config('SEL_API_URL')
 USER_KEY = config('SEL_USER_KEY')
 API_KEY = config('SEL_API_KEY')
 
+DB_DRIVER = config('DB_DRIVER')
 DB_URL = config('AZURE_DB_SERVER')
 DB_BATABASE = config('AZURE_DB_DATABASE')
 DB_USR = config('AZURE_DB_USR')
@@ -29,7 +30,7 @@ DB_PWD = config('AZURE_DB_PWD')
 
 
 # Formatted connection string for the SQL DB.
-SQL_CONN = "DSN={0};Database={1};UID={2};PWD={3};".format(DB_URL, DB_BATABASE, DB_USR, DB_PWD)
+SQL_CONN_STR = "DRIVER={0};SERVER={1};Database={2};UID={3};PWD={4};".format(DB_DRIVER, DB_URL, DB_BATABASE, DB_USR, DB_PWD)
 
 
 # Gets the units available via the API
@@ -239,7 +240,7 @@ if __name__ == '__main__':
 	unitGUIDs = []	# Used getting all device GUIDs from API, and subsequently suppling data for devices using these GUIDS
 	readingsJSON = []	# f
 
-	conn = db_connect(SQL_CONN)	
+	conn = db_connect(SQL_CONN_STR)	
 	
 	unitsList = get_units() # Get GUIDs for all connected devices via SEL API
 	
