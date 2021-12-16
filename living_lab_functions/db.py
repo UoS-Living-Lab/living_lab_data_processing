@@ -40,7 +40,7 @@ def execute_procedure(conn, sql, params, return_val = False):
 			# Fetch all results for the executed statement
 			rows = cursor.fetchall()
 			while rows:
-				print(rows)
+				#print(rows)
 				return str(rows)
 				#if cursor.nextset(): # Disabled during testing, unsure if required if result will always return one result
 				#	rows = cursor.fetchall()
