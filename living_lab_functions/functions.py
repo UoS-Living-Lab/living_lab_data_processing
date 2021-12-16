@@ -11,18 +11,29 @@ __version__ = "0.1"
 from uuid import UUID
 from flask import g
 import pandas as pd
+import os
 
 
 # Convert returned strings from the DB into GUID
-def str_to_uuid(struct):
-	# Remove the leading and trailing characters from the ID
-	struct = struct.replace("[('", "")
-	struct = struct.replace("', )]", "")
-	# Convert trimmed string into a GUID (UUID)
-	strUUID =  UUID(struct)
+def str_to_uuid(struct, flask = False):
+	if flask:
+		# Remove the leading and trailing characters from the ID
+		struct = struct.replace("[('", "")
+		struct = struct.replace("', )]", "")
+		# Convert trimmed string into a GUID (UUID)
+		g.strUUID =  UUID(struct)
 
-	# Return to calling function
-	return strUUID
+		# Return to calling function
+		return g.strUUID
+	else:
+		# Remove the leading and trailing characters from the ID
+		struct = struct.replace("[('", "")
+		struct = struct.replace("', )]", "")
+		# Convert trimmed string into a GUID (UUID)
+		strUUID =  UUID(struct)
+
+		# Return to calling function
+		return strUUID
 
 
 # Convert returned strings from the DB into GUID
@@ -117,3 +128,16 @@ def air_quality_processing(df):
 	df = includedColumns.combine_first(df)
 
 	return df
+
+
+# Function to save the processed data to a CSV
+def csv_dump(fileName, struct, index_set = False, index_label_usr = False, dir = os.getcwd() + "\\"):
+	#print('CSV Dump')
+	if os.path.exists(dir + fileName + '.csv'):
+		print("Appending CSV")
+		with open(dir + fileName + '.csv', 'a', encoding="utf-8", newline="") as fd:
+			struct.to_csv(fd, header=False, index=index_set)
+	else:
+		print("Creating CSV")
+		struct.to_csv(dir + fileName + '.csv', index=index_set, index_label = index_label_usr)
+
