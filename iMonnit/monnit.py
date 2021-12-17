@@ -81,8 +81,9 @@ def process_data(data):
 		conn = db_connect(SQL_CONN_STR)
 
 
-	print('Procesiing ' + len(splitDf.index) + ' rows...')
+	print('Processing ' + str(len(splitDf.index)) + ' rows...')
 	for i, sensorData in tqdm(splitDf.iterrows()):
+	#for i, sensorData in tqdm(splitDf.iloc[368511:].iterrows()):
 		#print("Processing sensor message " + str(i) + ".")
 
 		## CREATE NETWORK ##
