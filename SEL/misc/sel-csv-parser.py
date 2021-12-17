@@ -14,6 +14,7 @@ from living_lab_functions.db import db_connect, execute_procedure
 from living_lab_functions.functions import str_to_uuid
 
 from tqdm import tqdm
+import os
 
 BASE_URL = config('SEL_API_URL')
 USER_KEY = config('SEL_USER_KEY')
@@ -38,7 +39,6 @@ def create_reading(conn, data):	###
 		WHERE unitID = ?
 	"""
 	params = int(data['INTERFACE_ID'])
-	#print("Unit GUID")
 	unitGUID = str_to_uuid(execute_procedure(conn, sql, params, True))
 
 	try:
@@ -48,7 +48,6 @@ def create_reading(conn, data):	###
 			WHERE unitGUID = ? AND analogID = ?
 		"""
 		params = (unitGUID, int(data['aid']))
-		#print("Sensor GUID")
 		sensorGUID = str_to_uuid(execute_procedure(conn, sql, params, True))
 	except:
 		print("Sensor doesn't exist, storing for completeness...")
@@ -62,7 +61,6 @@ def create_reading(conn, data):	###
 			WHERE unitGUID = ? AND sensorGUID = ?
 		"""
 		params = (unitGUID, sensorGUID)
-		#print("M-Unit GUID")
 		mUnitGUID = str_to_uuid(execute_procedure(conn, sql, params, True))
 	else:
 		mUnitGUID = None
@@ -89,10 +87,13 @@ def create_reading(conn, data):	###
 
 if __name__ == '__main__':
 	conn = db_connect(SQL_CONN_STR)
-	df = pd.read_csv('./SEL/data/water_data_unpivot.csv')
+	df = pd.read_csv(os.getcwd() + '/SEL/data/water_data_unpivot.csv')
 
 	df['aid'] = df['aid'].map(lambda x: x.lstrip('AI'))
 
-	print('Procesiing ' + len(df.index) + ' rows...')
+	print('Procesiing ' + str(len(df.index)) + ' rows...')
 	for i, row in tqdm(df.iterrows()):
 		create_reading(conn, row)
+
+	conn.commit()
+	conn.close()
