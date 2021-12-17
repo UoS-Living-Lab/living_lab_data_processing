@@ -50,7 +50,7 @@ def create_reading(conn, data):	###
 		params = (unitGUID, int(data['aid']))
 		sensorGUID = str_to_uuid(execute_procedure(conn, sql, params, True))
 	except:
-		print("Sensor doesn't exist, storing for completeness...")
+		# print("Sensor doesn't exist, storing for completeness...")
 		sensorGUID = None
 
 
