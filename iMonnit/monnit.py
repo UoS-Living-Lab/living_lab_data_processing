@@ -242,12 +242,18 @@ def process_data(data):
 		#print('Step 10/10: Creating voltage reading')
 		execute_procedure(conn, sql, params)
 
+		if WEBHOOK:
+			# Commit data and close open database connection
+			commit_db()
+		else:
+			with open(os.getcwd() + "/iMonnit/data/monnit_current_row.txt", 'w') as txt:
+				txt.write(str(i))
+			conn.commit()
+
 	if WEBHOOK:
 		# Commit data and close open database connection
-		commit_db()
 		close_db()
 	else:
-		conn.commit()
 		conn.close()
 
 
@@ -281,5 +287,5 @@ if __name__ == '__main__':
 	else:
 		print("Processing CSV")
 
-		sensor_data = pd.read_csv(os.getcwd() + "\\iMonnit\\data\\living_lab_monnit_2020-11-01_2021-12-14.csv", low_memory=False)
+		sensor_data = pd.read_csv(os.getcwd() + "/iMonnit/data/living_lab_monnit_2020-11-01_2021-12-14.csv", low_memory=False)
 		process_data(sensor_data)

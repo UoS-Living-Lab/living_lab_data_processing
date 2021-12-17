@@ -94,6 +94,8 @@ if __name__ == '__main__':
 	print('Procesiing ' + str(len(df.index)) + ' rows...')
 	for i, row in tqdm(df.iterrows()):
 		create_reading(conn, row)
+		conn.commit()
+		with open(os.getcwd() + "/SEL/data/sel_current_row.txt", 'w') as txt:
+			txt.write(str(i))
 
-	conn.commit()
 	conn.close()
