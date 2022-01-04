@@ -42,7 +42,7 @@ SQL_CONN_STR = "DRIVER={0};SERVER={1};Database={2};UID={3};PWD={4};".format(DB_D
 # Load lists from env variables
 SENSOR_TYPES = config('MONNIT_SENSOR_TYPES', cast=lambda v: [s.strip() for s in v.split(',')])
 SENSOR_COLUMNS = config('MONNIT_SENSOR_COLUMNS', cast=lambda v: [s.strip() for s in v.split(',')])
-DELIMETERS = config('MONNIT_DELIMETERS', cast=lambda v: [s.strip() for s in v.split(',')])
+DELIMETERS = config('MONNIT_DELIMETERS', cast=lambda v: [s.strip() for s in v.split('*')])
 
 
 # Flask web server
