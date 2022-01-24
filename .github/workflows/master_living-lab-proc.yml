@@ -60,4 +60,4 @@ jobs:
         with:
           app-name: 'living-lab-proc'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_C3E5281088454F7287B386516C0BC1B3 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_1545621981B34871A2DD398584F90B92 }}
