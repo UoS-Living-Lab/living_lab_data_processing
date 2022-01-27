@@ -10,7 +10,9 @@ __version__ = "0.1"
 
 import flask
 import json
+from decouple import config
 
+DATA_DIR = config()
 
 # Main body
 if __name__ == '__main__':
