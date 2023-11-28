@@ -1,8 +1,13 @@
+__pycache__/
+ *.py[cod]
+
 # Virtual envs, env variables, and IDE dependencies
 .dlVenv
 .venv
 .vscode
 .env
+
+venv/
 
 living_lab_functions/__pycache__
 living_lab_functions.egg-info
@@ -18,3 +23,4 @@ NOVUS/jupyter
 iMonnit/data
 SEL/data
 NOVUS/data
+
