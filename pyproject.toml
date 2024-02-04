@@ -24,7 +24,8 @@ dependencies = [
 	'python-decouple',
 	'requests',
 	'tqdm',
-	'watchdog'
+	'watchdog',
+	"living-lab-functions"
 ]
 classifiers = [
 	# How mature is this project? Common values are

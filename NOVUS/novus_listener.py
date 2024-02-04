@@ -7,9 +7,6 @@ __author__ = "Ethan Bellmer"
 __version__ = "0.1"
 
 
-
-
-
 # Import libraries
 from flask import Flask, request
 from flask.wrappers import Response
@@ -24,11 +21,10 @@ from living_lab_functions.functions import str_to_uuid, split_dataframe_rows, re
 
 import json
 
-from os import read
+import os
+
 import requests
 from datetime import datetime
-
-
 
 
 # Envars
